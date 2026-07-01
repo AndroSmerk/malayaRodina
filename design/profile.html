@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Профиль — Малая Родина</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: #fff; border-bottom: 1px solid #eef0f4;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 32px; }
+    .topbar-logo { font-size: 18px; font-weight: 700; color: #1a1a2e; text-decoration: none; }
+    .topbar-nav { display: flex; gap: 6px; }
+    .topbar-nav a {
+      text-decoration: none; color: #666; font-size: 14px; font-weight: 500;
+      padding: 8px 14px; border-radius: 8px; transition: background 0.2s, color 0.2s;
+    }
+    .topbar-nav a:hover, .topbar-nav a.active { background: #f0f4ff; color: #1a73e8; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .user-avatar {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 15px; cursor: pointer;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+    /* Профиль */
+    .profile-header {
+      background: #fff; border-radius: 16px; padding: 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04); margin-bottom: 24px;
+      display: flex; align-items: center; gap: 28px;
+    }
+    .profile-avatar {
+      width: 80px; height: 80px; border-radius: 18px;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 32px; font-weight: 700; flex-shrink: 0;
+    }
+    .profile-info h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .profile-info .email { font-size: 14px; color: #888; margin-bottom: 12px; }
+    .profile-info .bio { font-size: 14px; color: #555; line-height: 1.6; max-width: 480px; }
+    .profile-info .edit-profile-btn {
+      margin-top: 12px; padding: 8px 18px; background: #f0f4ff; color: #1a73e8;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* Статистика */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 20px; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .stat-card .stat-value { font-size: 24px; font-weight: 700; }
+    .stat-card .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* Лента */
+    .section-title {
+      font-size: 16px; font-weight: 600; margin-bottom: 16px;
+    }
+
+    .memory-item {
+      display: flex; gap: 16px; background: #fff; border-radius: 12px;
+      padding: 16px 20px; margin-bottom: 10px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s;
+    }
+    .memory-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .memory-item .thumb {
+      width: 60px; height: 60px; border-radius: 10px; background: #eef0f4;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    .memory-item .info { flex: 1; min-width: 0; }
+    .memory-item .info .place-name {
+      font-size: 12px; color: #1a73e8; margin-bottom: 4px;
+    }
+    .memory-item .info .title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .memory-item .info .excerpt {
+      font-size: 13px; color: #888; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .memory-item .info .date { font-size: 12px; color: #bbb; margin-top: 4px; }
+
+    @media (max-width: 600px) {
+      .profile-header { flex-direction: column; text-align: center; }
+      .profile-info .bio { max-width: 100%; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="map.html" class="topbar-logo">🌿 Малая Родина</a>
+      <nav class="topbar-nav">
+        <a href="map.html">Карта</a>
+        <a href="#">Мои места</a>
+        <a href="#">Хроника</a>
+        <a href="#">Соседи</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="profile-header">
+      <div class="profile-avatar">ИП</div>
+      <div class="profile-info">
+        <h1>Иван Петров</h1>
+        <div class="email">ivan.petrov@example.com</div>
+        <div class="bio">Люблю вспоминать детство в деревне. Собираю историю своей семьи и родных мест.</div>
+        <button class="edit-profile-btn">✏️ Редактировать профиль</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">📍 Места</div></div>
+      <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">📝 Воспоминания</div></div>
+      <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">📸 Фото</div></div>
+      <div class="stat-card"><div class="stat-value">3</div><div class="stat-label">🎬 Видео</div></div>
+    </div>
+
+    <div class="section-title">📝 Последние воспоминания</div>
+
+    <a href="memory.html" style="text-decoration:none;color:inherit;">
+      <div class="memory-item">
+        <div class="thumb">📸</div>
+        <div class="info">
+          <div class="place-name">ул. Центральная, д. 15</div>
+          <div class="title">Качели во дворе</div>
+          <div class="excerpt">Помню, как мы с ребятами после школы бежали к качелям...</div>
+          <div class="date">📅 15 июня 2005</div>
+        </div>
+      </div>
+    </a>
+
+    <a href="#" style="text-decoration:none;color:inherit;">
+      <div class="memory-item">
+        <div class="thumb">🎬</div>
+        <div class="info">
+          <div class="place-name">ул. Центральная, д. 15</div>
+          <div class="title">Первое сентября</div>
+          <div class="excerpt">Мама повела меня в первый класс. Я помню запах букетов...</div>
+          <div class="date">📅 1 сентября 2003</div>
+        </div>
+      </div>
+    </a>
+
+    <a href="#" style="text-decoration:none;color:inherit;">
+      <div class="memory-item">
+        <div class="thumb">📸</div>
+        <div class="info">
+          <div class="place-name">ул. Центральная, д. 15</div>
+          <div class="title">Речка за огородом</div>
+          <div class="excerpt">Жара стояла невыносимая, и мы с пацанами бегали на речку...</div>
+          <div class="date">📅 12 июля 2010</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Малая Родина — Карта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="../auth/index.html" class="topbar-logo">🌿 Малая Родина</a>
+      <nav class="topbar-nav">
+        <a href="#" class="active">Карта</a>
+        <a href="../place/index.html">Мои места</a>
+        <a href="../profile/index.html">Хроника</a>
+        <a href="../neighbors/index.html">Соседи</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-avatar" id="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Поиск по названию...">
+          <div id="search-results"></div>
+        </div>
+      </div>
+
+      <div class="places-scroll" id="places-list"></div>
+
+      <button class="add-place-btn" id="add-place-btn">+ Добавить место</button>
+    </aside>
+
+    <div class="map-area">
+      <div id="map"></div>
+      <button class="fab" id="fab">+</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

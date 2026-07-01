@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Малая Родина — Карта памяти</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <h2>🔍 Поиск места</h2>
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Введите название..." autocomplete="off">
+        <div id="search-results"></div>
+      </div>
+
+      <h2>📍 Мои места</h2>
+      <ul id="places-list"></ul>
+      <p class="hint">Кликните по карте, чтобы добавить место</p>
+    </aside>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

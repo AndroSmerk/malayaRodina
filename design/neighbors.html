@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Соседи — ул. Центральная, д. 15 — Малая Родина</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: #fff; border-bottom: 1px solid #eef0f4;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 32px; }
+    .topbar-logo { font-size: 18px; font-weight: 700; color: #1a1a2e; text-decoration: none; }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .user-avatar {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 15px; cursor: pointer;
+    }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 14px; color: #666; text-decoration: none; margin-bottom: 24px;
+    }
+    .back-link:hover { color: #1a73e8; }
+
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header .place-ref { font-size: 14px; color: #888; margin-top: 4px; }
+
+    .btn-primary {
+      padding: 10px 20px; background: #1a73e8; color: #fff; border: none;
+      border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: #1557b0; }
+
+    /* Таблица/список */
+    .neighbor-card {
+      background: #fff; border-radius: 12px; padding: 18px 20px;
+      margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: flex; align-items: center; gap: 16px; transition: box-shadow 0.2s;
+    }
+    .neighbor-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+    .neighbor-avatar {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .neighbor-avatar.default { background: #f0f4ff; color: #1a73e8; }
+    .neighbor-avatar.family { background: #fff3e0; color: #f57c00; }
+    .neighbor-avatar.friend { background: #e8f5e9; color: #4caf50; }
+
+    .neighbor-info { flex: 1; min-width: 0; }
+    .neighbor-info .name { font-size: 15px; font-weight: 600; }
+    .neighbor-info .role { font-size: 13px; color: #888; margin-top: 2px; }
+    .neighbor-info .period {
+      font-size: 12px; color: #bbb; margin-top: 2px;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    .neighbor-memories {
+      display: flex; gap: 4px;
+    }
+    .neighbor-memories .memory-dot {
+      width: 28px; height: 28px; border-radius: 6px; background: #eef0f4;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; cursor: pointer; transition: background 0.2s;
+      text-decoration: none;
+    }
+    .neighbor-memories .memory-dot:hover { background: #e3edff; }
+
+    .neighbor-actions button {
+      background: none; border: none; color: #ccc; font-size: 18px;
+      cursor: pointer; padding: 4px; transition: color 0.2s;
+    }
+    .neighbor-actions button:hover { color: #e74c3c; }
+
+    /* Форма добавления */
+    .add-form {
+      background: #fff; border-radius: 12px; padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px;
+      display: none;
+    }
+    .add-form.open { display: block; }
+    .add-form h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+    .form-row {
+      display: flex; gap: 12px; margin-bottom: 12px;
+    }
+    .form-group { flex: 1; }
+    .form-group label {
+      display: block; font-size: 12px; font-weight: 500; color: #666; margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px;
+      border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px;
+      font-family: inherit; outline: none; background: #fafafa;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+    }
+    .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-submit {
+      padding: 10px 20px; background: #1a73e8; color: #fff; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+    }
+    .btn-cancel {
+      padding: 10px 20px; background: none; color: #666; border: 1.5px solid #d0d5de;
+      border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+    }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: #bbb;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+
+    @media (max-width: 600px) {
+      .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="map.html" class="topbar-logo">🌿 Малая Родина</a>
+    </div>
+    <div class="topbar-right">
+      <div class="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <a href="place.html" class="back-link">← ул. Центральная, д. 15</a>
+
+    <div class="page-header">
+      <div>
+        <h1>👥 Соседи</h1>
+        <div class="place-ref">ул. Центральная, д. 15 — Красная Пахра</div>
+      </div>
+      <button class="btn-primary" id="show-add-form">+ Добавить жителя</button>
+    </div>
+
+    <!-- Форма добавления -->
+    <div class="add-form" id="add-form">
+      <h3>Новый житель</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>ФИО</label>
+          <input type="text" placeholder="Иванова Валентина Степановна">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Роль</label>
+          <select>
+            <option>Сосед(ка)</option>
+            <option>Друг детства</option>
+            <option>Родственник</option>
+            <option>Другой</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Период проживания</label>
+          <input type="text" placeholder="1985–2005">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-submit">Сохранить</button>
+        <button class="btn-cancel" id="hide-add-form">Отмена</button>
+      </div>
+    </div>
+
+    <!-- Список соседей -->
+    <div class="neighbor-card">
+      <div class="neighbor-avatar family">👩</div>
+      <div class="neighbor-info">
+        <div class="name">Валентина Степановна</div>
+        <div class="role">Соседка</div>
+        <div class="period">📅 1985–2010</div>
+      </div>
+      <div class="neighbor-memories">
+        <a href="memory.html" class="memory-dot" title="Качели во дворе">📸</a>
+      </div>
+      <div class="neighbor-actions">
+        <button title="Удалить">×</button>
+      </div>
+    </div>
+
+    <div class="neighbor-card">
+      <div class="neighbor-avatar friend">👦</div>
+      <div class="neighbor-info">
+        <div class="name">Серёжка Кузнецов</div>
+        <div class="role">Друг детства</div>
+        <div class="period">📅 1995–2005</div>
+      </div>
+      <div class="neighbor-memories">
+        <a href="memory.html" class="memory-dot" title="Качели во дворе">📸</a>
+        <a href="#" class="memory-dot" title="Речка за огородом">📸</a>
+      </div>
+      <div class="neighbor-actions">
+        <button title="Удалить">×</button>
+      </div>
+    </div>
+
+    <div class="neighbor-card">
+      <div class="neighbor-avatar default">👨</div>
+      <div class="neighbor-info">
+        <div class="name">Дядя Коля</div>
+        <div class="role">Сосед</div>
+        <div class="period">📅 1990–2015</div>
+      </div>
+      <div class="neighbor-memories">
+        <div class="neighbor-memories">
+          <span class="memory-dot" style="cursor:default;opacity:0.3">—</span>
+        </div>
+      </div>
+      <div class="neighbor-actions">
+        <button title="Удалить">×</button>
+      </div>
+    </div>
+
+    <div class="neighbor-card">
+      <div class="neighbor-avatar friend">👦</div>
+      <div class="neighbor-info">
+        <div class="name">Витька Соколов</div>
+        <div class="role">Друг детства</div>
+        <div class="period">📅 1995–2007</div>
+      </div>
+      <div class="neighbor-memories">
+        <a href="#" class="memory-dot" title="Речка за огородом">📸</a>
+        <a href="#" class="memory-dot" title="Качели во дворе">🎬</a>
+      </div>
+      <div class="neighbor-actions">
+        <button title="Удалить">×</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('show-add-form').addEventListener('click', () => {
+      document.getElementById('add-form').classList.add('open');
+    });
+    document.getElementById('hide-add-form').addEventListener('click', () => {
+      document.getElementById('add-form').classList.remove('open');
+    });
+  </script>
+</body>
+</html>
