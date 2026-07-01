@@ -74,15 +74,18 @@ async function init() {
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
-  const [profile, stats, memories] = await Promise.all([
-    API.getProfile(),
-    API.getStats(),
-    API.getRecentMemories()
-  ]);
+  let profile, stats, memories;
+  try {
+    [profile, stats, memories] = await Promise.all([
+      API.getProfile(),
+      API.getStats(),
+      API.getRecentMemories()
+    ]);
+  } catch {}
 
-  renderProfile(profile);
-  renderStats(stats);
-  renderMemories(memories);
+  if (profile) renderProfile(profile);
+  if (stats) renderStats(stats);
+  if (memories) renderMemories(memories);
 }
 
 document.addEventListener('DOMContentLoaded', init);

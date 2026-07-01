@@ -116,9 +116,11 @@ async function init() {
     maxZoom: 18
   }).addTo(map);
 
-  state.places = await API.getPlaces();
-  state.places.forEach(p => addPlaceMarker(p));
-  renderPlaces(state.places);
+  try {
+    state.places = await API.getPlaces();
+    state.places.forEach(p => addPlaceMarker(p));
+    renderPlaces(state.places);
+  } catch {}
 
   map.on('click', async e => {
     const { lat, lng } = e.latlng;

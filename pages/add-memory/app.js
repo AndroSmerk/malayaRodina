@@ -14,7 +14,7 @@ const API = {
   }
 };
 
-let state = { placeId: null, photos: [] };
+let state = { placeId: null, photos: [], videos: [] };
 
 function escHtml(text) {
   const d = document.createElement('div');
@@ -40,6 +40,23 @@ function renderPhotoPreviews() {
     btn.addEventListener('click', () => {
       state.photos.splice(Number(btn.dataset.index), 1);
       renderPhotoPreviews();
+    });
+  });
+}
+
+function renderVideoPreviews() {
+  const container = document.getElementById('video-previews');
+  container.innerHTML = state.videos.map((_, i) =>
+    `<div class="preview-item">
+      🎬
+      <button class="remove-video" data-index="${i}">×</button>
+    </div>`
+  ).join('');
+
+  container.querySelectorAll('.remove-video').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.videos.splice(Number(btn.dataset.index), 1);
+      renderVideoPreviews();
     });
   });
 }
@@ -71,6 +88,20 @@ function init() {
     input.click();
   });
 
+  document.getElementById('video-upload').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.multiple = true;
+    input.onchange = () => {
+      for (const file of input.files) {
+        state.videos.push({ id: Date.now(), file });
+      }
+      renderVideoPreviews();
+    };
+    input.click();
+  });
+
   document.getElementById('cancel-btn').addEventListener('click', () => {
     window.location.href = state.placeId ? `../place/index.html?id=${state.placeId}` : '../map/index.html';
   });
@@ -90,6 +121,16 @@ function init() {
           const fd = new FormData();
           fd.append('file', photo.file);
           await fetch(`/api/memories/${memory.id}/photos`, {
+            method: 'POST', headers: { 'Authorization': authHeaders()['Authorization'] },
+            body: fd,
+          });
+        }
+      }
+      for (const video of state.videos) {
+        if (video.file) {
+          const fd = new FormData();
+          fd.append('file', video.file);
+          await fetch(`/api/memories/${memory.id}/videos`, {
             method: 'POST', headers: { 'Authorization': authHeaders()['Authorization'] },
             body: fd,
           });

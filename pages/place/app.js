@@ -17,10 +17,14 @@ const API = {
     return res.json();
   },
   async getPhotos(placeId) {
-    return [];
+    const res = await fetch(`/api/places/${placeId}/photos`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
   },
   async getVideos(placeId) {
-    return [];
+    const res = await fetch(`/api/places/${placeId}/videos`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
   }
 };
 
@@ -105,7 +109,8 @@ function renderMemories(memories) {
 
   container.querySelectorAll('.memory-card').forEach(el => {
     el.addEventListener('click', () => {
-      window.location.href = `../memory/index.html?id=${el.dataset.id}`;
+      const placeId = new URLSearchParams(window.location.search).get('id');
+      window.location.href = `../memory/index.html?id=${el.dataset.id}${placeId ? `&placeId=${placeId}` : ''}`;
     });
   });
 }
@@ -116,14 +121,20 @@ function renderPhotos(photos) {
     container.innerHTML = '<div class="empty-state"><div class="icon">📸</div><p>Фото пока нет</p></div>';
     return;
   }
-  container.innerHTML = `<div class="photo-grid">${photos.map(() => '<div class="photo-item">📸</div>').join('')}</div>`;
+  container.innerHTML = `<div class="photo-grid">${photos.map(p =>
+    `<div class="photo-item"><img src="${escHtml(p.url)}" alt="photo" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></div>`
+  ).join('')}</div>`;
 }
 
 function renderVideos(videos) {
   const container = document.getElementById('section-videos');
-  container.innerHTML = !videos.length
-    ? '<div class="empty-state"><div class="icon">🎬</div><p>Видео пока нет</p></div>'
-    : '';
+  if (!videos.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎬</div><p>Видео пока нет</p></div>';
+    return;
+  }
+  container.innerHTML = `<div class="photo-grid">${videos.map(v =>
+    `<div class="photo-item"><video src="${escHtml(v.url)}" controls style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></video></div>`
+  ).join('')}</div>`;
 }
 
 async function init() {
@@ -134,16 +145,22 @@ async function init() {
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
-  state.place = await API.getPlace(placeId);
-  state.memories = await API.getMemories(placeId);
-  state.photos = await API.getPhotos(placeId);
-  state.videos = await API.getVideos(placeId);
+  try {
+    state.place = await API.getPlace(placeId);
+  } catch {}
+  try {
+    state.memories = await API.getMemories(placeId);
+  } catch {}
+  try { state.photos = await API.getPhotos(placeId); } catch {}
+  try { state.videos = await API.getVideos(placeId); } catch {}
 
-  renderHero(state.place);
-  renderTabs();
-  renderMemories(state.memories);
-  renderPhotos(state.photos);
-  renderVideos(state.videos);
+  if (state.place) {
+    renderHero(state.place);
+    renderTabs();
+    renderMemories(state.memories);
+    renderPhotos(state.photos);
+    renderVideos(state.videos);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

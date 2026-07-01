@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from database import get_db
-from models import User, Place, Memory, Photo
+from models import User, Place, Memory, Photo, Video
 from schemas import ProfileResponse, StatsResponse
 from auth_utils import get_current_user
 
@@ -30,7 +30,12 @@ def get_stats(db: Session = Depends(get_db), user: User = Depends(get_current_us
             db.query(Memory.id).filter(Memory.user_id == user.id)
         )
     ).scalar()
-    return StatsResponse(places=places, memories=memories, photos=photos, videos=0)
+    videos = db.query(func.count(Video.id)).filter(
+        Video.memory_id.in_(
+            db.query(Memory.id).filter(Memory.user_id == user.id)
+        )
+    ).scalar()
+    return StatsResponse(places=places, memories=memories, photos=photos, videos=videos)
 
 
 @router.get("/memories")

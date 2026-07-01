@@ -35,6 +35,7 @@ class Place(Base):
     user = relationship("User", back_populates="places")
     memories = relationship("Memory", back_populates="place", cascade="all, delete-orphan")
     photos = relationship("Photo", back_populates="place", cascade="all, delete-orphan")
+    videos = relationship("Video", back_populates="place", cascade="all, delete-orphan")
 
 
 class Memory(Base):
@@ -52,6 +53,7 @@ class Memory(Base):
     place = relationship("Place", back_populates="memories")
     user = relationship("User", back_populates="memories")
     photos = relationship("Photo", back_populates="memory", cascade="all, delete-orphan")
+    videos = relationship("Video", back_populates="memory", cascade="all, delete-orphan")
 
 
 class Photo(Base):
@@ -65,6 +67,19 @@ class Photo(Base):
 
     memory = relationship("Memory", back_populates="photos")
     place = relationship("Place", back_populates="photos")
+
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    file_path = Column(String(500), default="")
+    memory_id = Column(Integer, ForeignKey("memories.id"), nullable=True)
+    place_id = Column(Integer, ForeignKey("places.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    memory = relationship("Memory")
+    place = relationship("Place")
 
 
 class Neighbor(Base):

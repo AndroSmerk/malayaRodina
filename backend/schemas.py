@@ -60,6 +60,8 @@ class MemoryResponse(BaseModel):
     placeName: str = ""
     placeRegion: str = ""
     media: list = []
+    photos: list = []
+    videos: list = []
 
     class Config:
         from_attributes = True

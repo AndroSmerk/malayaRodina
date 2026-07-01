@@ -35,10 +35,14 @@ function renderMemory(memory) {
   const paragraphs = memory.text.split('\n\n').map(p => `<p>${escHtml(p)}</p>`).join('');
 
   let mediaHtml = '';
-  if (memory.media.length) {
-    mediaHtml = `<div class="memory-media">${memory.media.map((m, i) =>
-      `<div class="media-item ${m === '🎬' ? 'video' : ''}">${m}</div>`
-    ).join('')}</div>`;
+  if (memory.photos?.length || memory.videos?.length) {
+    const imgs = (memory.photos || []).map(p =>
+      `<img src="${escHtml(p.url)}" alt="" class="media-item" loading="lazy">`
+    ).join('');
+    const vids = (memory.videos || []).map(v =>
+      `<video src="${escHtml(v.url)}" controls class="media-item"></video>`
+    ).join('');
+    mediaHtml = `<div class="memory-media">${imgs}${vids}</div>`;
   }
 
   document.getElementById('memory-card').innerHTML = `
@@ -75,7 +79,7 @@ function init() {
 
   const backLink = document.getElementById('back-link');
   const placeId = new URLSearchParams(window.location.search).get('placeId');
-  backLink.href = placeId ? `../place/index.html?id=${placeId}` : '../place/index.html?id=3';
+  backLink.href = placeId ? `../place/index.html?id=${placeId}` : '../my-places/index.html';
 
   document.getElementById('edit-btn').addEventListener('click', () => {
     window.location.href = `../add-memory/index.html?edit=${memoryId}`;
@@ -94,6 +98,9 @@ function init() {
   API.getMemory(memoryId).then(memory => {
     state.memory = memory;
     renderMemory(memory);
+    if (memory.placeId && !placeId) {
+      backLink.href = `../place/index.html?id=${memory.placeId}`;
+    }
   });
 
   API.getAdjacentMemories(memoryId).then(({ prev, next }) => renderNav(prev, next));

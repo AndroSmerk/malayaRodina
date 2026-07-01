@@ -6,7 +6,7 @@ from sqlalchemy import func
 from typing import Optional
 
 from database import get_db
-from models import Memory, Place, Photo, User
+from models import Memory, Place, Photo, Video, User
 from schemas import MemoryCreate, MemoryResponse
 from auth_utils import get_current_user
 
@@ -14,6 +14,12 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter(prefix="/api/memories", tags=["memories"])
+
+
+def _media_url(file_path: str | None) -> str | None:
+    if not file_path:
+        return None
+    return f"/uploads/{os.path.basename(file_path)}"
 
 
 @router.get("", response_model=list[MemoryResponse])
@@ -25,11 +31,9 @@ def list_memories(place_id: int = None, db: Session = Depends(get_db), user: Use
     result = []
     for m in memories:
         place = m.place
-        photos_count = db.query(func.count(Photo.id)).filter(Photo.memory_id == m.id).scalar()
-        media = []
-        # Add photos
         photos = db.query(Photo).filter(Photo.memory_id == m.id).all()
-        media = ["📸"] * len(photos)
+        videos = db.query(Video).filter(Video.memory_id == m.id).all()
+        media = ["📸"] * len(photos) + ["🎬"] * len(videos)
         result.append(MemoryResponse(
             id=m.id, title=m.title, text=m.text,
             date=m.date, category=m.category,
@@ -37,6 +41,8 @@ def list_memories(place_id: int = None, db: Session = Depends(get_db), user: Use
             placeName=place.name if place else "",
             placeRegion=place.region if place else "",
             media=media,
+            photos=[{"url": _media_url(p.file_path)} for p in photos if _media_url(p.file_path)],
+            videos=[{"url": _media_url(v.file_path)} for v in videos if _media_url(v.file_path)],
         ))
     return result
 
@@ -67,6 +73,8 @@ def create_memory(body: MemoryCreate, db: Session = Depends(get_db), user: User 
         placeName=place.name,
         placeRegion=place.region or "",
         media=[],
+        photos=[],
+        videos=[],
     )
 
 
@@ -77,7 +85,8 @@ def get_memory(memory_id: int, db: Session = Depends(get_db), user: User = Depen
         raise HTTPException(status_code=404, detail="Memory not found")
     place = memory.place
     photos = db.query(Photo).filter(Photo.memory_id == memory.id).all()
-    media = ["📸"] * len(photos)
+    videos = db.query(Video).filter(Video.memory_id == memory.id).all()
+    media = ["📸"] * len(photos) + ["🎬"] * len(videos)
     return MemoryResponse(
         id=memory.id,
         title=memory.title,
@@ -85,9 +94,11 @@ def get_memory(memory_id: int, db: Session = Depends(get_db), user: User = Depen
         date=memory.date,
         category=memory.category,
         placeId=memory.place_id,
-        placeName=place.name,
+        placeName=place.name if place else "",
         placeRegion=place.region or "",
         media=media,
+        photos=[{"url": _media_url(p.file_path)} for p in photos if _media_url(p.file_path)],
+        videos=[{"url": _media_url(v.file_path)} for v in videos if _media_url(v.file_path)],
     )
 
 
@@ -120,6 +131,27 @@ async def upload_photo(
     db.add(photo)
     db.commit()
     return {"id": photo.id, "file_path": filepath}
+
+
+@router.post("/{memory_id}/videos")
+async def upload_video(
+    memory_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    ext = os.path.splitext(file.filename or "video.mp4")[1] or ".mp4"
+    filename = f"memory_{memory_id}_{os.urandom(4).hex()}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    video = Video(file_path=filepath, memory_id=memory.id, place_id=memory.place_id)
+    db.add(video)
+    db.commit()
+    return {"id": video.id, "file_path": filepath}
 
 
 @router.get("/adjacent/{memory_id}")

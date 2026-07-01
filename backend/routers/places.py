@@ -1,9 +1,10 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from database import get_db
-from models import Place, Memory, Photo, Neighbor, User
+from models import Place, Memory, Photo, Video, Neighbor, User
 from schemas import PlaceCreate, PlaceResponse
 from auth_utils import get_current_user
 
@@ -16,12 +17,13 @@ def list_places(db: Session = Depends(get_db), user: User = Depends(get_current_
     result = []
     for p in places:
         photos_count = db.query(func.count(Photo.id)).filter(Photo.place_id == p.id).scalar()
+        videos_count = db.query(func.count(Video.id)).filter(Video.place_id == p.id).scalar()
         neighbors_count = db.query(func.count(Neighbor.id)).filter(Neighbor.place_id == p.id).scalar()
         memories_count = db.query(func.count(Memory.id)).filter(Memory.place_id == p.id).scalar()
         result.append(PlaceResponse(
             id=p.id, name=p.name, type=p.type,
             lat=p.lat, lng=p.lng, region=p.region,
-            photos=photos_count, videos=0,
+            photos=photos_count, videos=videos_count,
             neighbors=neighbors_count, memories=memories_count,
         ))
     return result
@@ -50,11 +52,37 @@ def get_place(place_id: int, db: Session = Depends(get_db), user: User = Depends
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
     photos_count = db.query(func.count(Photo.id)).filter(Photo.place_id == place.id).scalar()
+    videos_count = db.query(func.count(Video.id)).filter(Video.place_id == place.id).scalar()
     neighbors_count = db.query(func.count(Neighbor.id)).filter(Neighbor.place_id == place.id).scalar()
     memories_count = db.query(func.count(Memory.id)).filter(Memory.place_id == place.id).scalar()
     return PlaceResponse(
         id=place.id, name=place.name, type=place.type,
         lat=place.lat, lng=place.lng, region=place.region,
-        photos=photos_count, videos=0,
+        photos=photos_count,         videos=videos_count,
         neighbors=neighbors_count, memories=memories_count,
     )
+
+
+@router.get("/{place_id}/photos")
+def list_place_photos(place_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    place = db.query(Place).filter(Place.id == place_id, Place.user_id == user.id).first()
+    if not place:
+        raise HTTPException(status_code=404, detail="Place not found")
+    photos = db.query(Photo).filter(Photo.place_id == place.id).all()
+    uploads_abs = os.path.abspath("uploads")
+    return [
+        {"id": p.id, "url": f"/uploads/{os.path.basename(p.file_path)}"}
+        for p in photos if p.file_path
+    ]
+
+
+@router.get("/{place_id}/videos")
+def list_place_videos(place_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    place = db.query(Place).filter(Place.id == place_id, Place.user_id == user.id).first()
+    if not place:
+        raise HTTPException(status_code=404, detail="Place not found")
+    videos = db.query(Video).filter(Video.place_id == place.id).all()
+    return [
+        {"id": v.id, "url": f"/uploads/{os.path.basename(v.file_path)}"}
+        for v in videos if v.file_path
+    ]
