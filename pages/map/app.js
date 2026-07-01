@@ -1,11 +1,22 @@
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
   async getPlaces() {
-    return [
-      { id: 1, name: 'Красная Пахра', type: 'village', coords: [55.428, 37.289], photos: 4, neighbors: 2, region: 'Московская область' },
-      { id: 2, name: 'Подольск', type: 'city', coords: [55.429, 37.544], photos: 12, videos: 2, region: 'Московская область' },
-      { id: 3, name: 'ул. Центральная, д. 15', type: 'house', coords: [55.415, 37.330], photos: 8, neighbors: 5, region: 'Красная Пахра' },
-      { id: 4, name: 'Степаньково', type: 'village', coords: [55.382, 37.380], photos: 1, videos: 1, region: 'Московская область' }
-    ];
+    const res = await fetch(`/api/places`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map(p => ({ ...p, coords: [p.lat, p.lng] }));
+  },
+  async createPlace(name, lat, lng) {
+    const res = await fetch(`/api/places`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ name, lat, lng, type: 'village', region: '' }),
+    });
+    if (!res.ok) throw new Error('Ошибка создания места');
+    return res.json();
   },
   async searchPlaces(query) {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=ru`;
@@ -109,15 +120,18 @@ async function init() {
   state.places.forEach(p => addPlaceMarker(p));
   renderPlaces(state.places);
 
-  map.on('click', e => {
+  map.on('click', async e => {
     const { lat, lng } = e.latlng;
     const name = prompt('Название места:');
     if (name && name.trim()) {
-      const newPlace = { id: Date.now(), name: name.trim(), type: 'village', coords: [lat, lng], photos: 0, region: '' };
-      state.places.push(newPlace);
-      addPlaceMarker(newPlace);
-      renderPlaces(state.places);
-      map.setView([lat, lng], 13);
+      try {
+        const newPlace = await API.createPlace(name.trim(), lat, lng);
+        newPlace.coords = [newPlace.lat, newPlace.lng];
+        state.places.push(newPlace);
+        addPlaceMarker(newPlace);
+        renderPlaces(state.places);
+        map.setView([lat, lng], 13);
+      } catch { alert('Ошибка создания места'); }
     }
   });
 
@@ -139,14 +153,17 @@ async function init() {
   });
 
   document.querySelectorAll('.fab, #add-place-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const name = prompt('Название нового места:');
       if (name && name.trim()) {
         const center = map.getCenter();
-        const newPlace = { id: Date.now(), name: name.trim(), type: 'village', coords: [center.lat, center.lng], photos: 0, region: '' };
-        state.places.push(newPlace);
-        addPlaceMarker(newPlace);
-        renderPlaces(state.places);
+        try {
+          const newPlace = await API.createPlace(name.trim(), center.lat, center.lng);
+          newPlace.coords = [newPlace.lat, newPlace.lng];
+          state.places.push(newPlace);
+          addPlaceMarker(newPlace);
+          renderPlaces(state.places);
+        } catch { alert('Ошибка создания места'); }
       }
     });
   });

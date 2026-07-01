@@ -1,21 +1,23 @@
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
   async getProfile() {
-    return {
-      name: 'Иван Петров',
-      email: 'ivan.petrov@example.com',
-      bio: 'Люблю вспоминать детство в деревне. Собираю историю своей семьи и родных мест.',
-      initials: 'ИП'
-    };
+    const res = await fetch(`/api/profile`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Profile not found');
+    return res.json();
   },
   async getStats() {
-    return { places: 4, memories: 12, photos: 8, videos: 3 };
+    const res = await fetch(`/api/profile/stats`, { headers: authHeaders() });
+    if (!res.ok) return { places: 0, memories: 0, photos: 0, videos: 0 };
+    return res.json();
   },
   async getRecentMemories() {
-    return [
-      { id: 1, title: 'Качели во дворе', place: 'ул. Центральная, д. 15', excerpt: 'Помню, как мы с ребятами после школы бежали к качелям...', date: '15 июня 2005', thumb: '📸' },
-      { id: 2, title: 'Первое сентября', place: 'ул. Центральная, д. 15', excerpt: 'Мама повела меня в первый класс...', date: '1 сентября 2003', thumb: '🎬' },
-      { id: 3, title: 'Речка за огородом', place: 'ул. Центральная, д. 15', excerpt: 'Жара стояла невыносимая...', date: '12 июля 2010', thumb: '📸' }
-    ];
+    const res = await fetch(`/api/profile/memories`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
   }
 };
 

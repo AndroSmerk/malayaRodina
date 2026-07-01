@@ -1,19 +1,23 @@
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
   async getPlace(id) {
-    const places = {
-      3: { id: 3, name: 'ул. Центральная, д. 15', type: 'house', region: 'Красная Пахра, Московская область', coords: [55.415, 37.330], memories: 12, photos: 8, videos: 3, neighbors: 5 }
-    };
-    return places[id] || places[3];
+    const res = await fetch(`/api/places/${id}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Place not found');
+    const data = await res.json();
+    data.coords = [data.lat, data.lng];
+    return data;
   },
   async getMemories(placeId) {
-    return [
-      { id: 1, title: 'Качели во дворе', date: '15 июня 2005', category: 'Детство', text: 'Помню, как мы с ребятами после школы бежали к качелям...', media: ['📸', '📸'] },
-      { id: 2, title: 'Первое сентября', date: '1 сентября 2003', category: 'Школа', text: 'Мама повела меня в первый класс...', media: ['🎬'] },
-      { id: 3, title: 'Речка за огородом', date: '12 июля 2010', category: 'Лето', text: 'Жара стояла невыносимая...', media: [] }
-    ];
+    const res = await fetch(`/api/memories?place_id=${placeId}`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
   },
   async getPhotos(placeId) {
-    return Array.from({ length: 8 }, (_, i) => ({ id: i }));
+    return [];
   },
   async getVideos(placeId) {
     return [];

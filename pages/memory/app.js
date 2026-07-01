@@ -1,24 +1,25 @@
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
   async getMemory(id) {
-    const memories = {
-      1: { id: 1, title: 'Качели во дворе', date: '15 июня 2005', category: 'Детство', placeId: 3, placeName: 'ул. Центральная, д. 15', placeRegion: 'Красная Пахра, Московская область',
-        text: 'Помню, как мы с ребятами после школы бежали к качелям. Они были старые, скрипучие, но мы их обожали. Дед сделал их ещё в 90-х из толстой цепи и деревянной доски. Сидеть на ней было больно, но мы подкладывали старые подушки.\n\nОсобенно любили качаться вечером, когда солнце садилось за огороды, и небо становилось оранжевым. Казалось, что качели достают до самого неба.\n\nОдин раз Витька так сильно раскачался, что перелетел через перекладину. Хорошо, что упал в крапиву — отделался парой ожогов и маминым выговором.\n\nСейчас тех качелей уже нет. На их месте построили новый дом. Но я каждый раз, когда проезжаю мимо, вспоминаю тот скрип и запах вечерней травы.',
-        media: ['📸', '🎬', '📸', '📸'] },
-      2: { id: 2, title: 'Первое сентября', date: '1 сентября 2003', category: 'Школа', placeId: 3, placeName: 'ул. Центральная, д. 15', placeRegion: 'Красная Пахра, Московская область',
-        text: 'Мама повела меня в первый класс. Я помню запах букетов и как волновался. После линейки весь двор собрался за столом во дворе — отмечали...',
-        media: ['🎬'] },
-      3: { id: 3, title: 'Речка за огородом', date: '12 июля 2010', category: 'Лето', placeId: 3, placeName: 'ул. Центральная, д. 15', placeRegion: 'Красная Пахра, Московская область',
-        text: 'Жара стояла невыносимая, и мы с пацанами бегали на речку. Вода была тёплая-тёплая, а на обратном пути всегда заходили в магазин за газировкой...',
-        media: [] }
-    };
-    return memories[id] || memories[1];
+    const res = await fetch(`/api/memories/${id}`, { headers: authHeaders() });
+    if (!res.ok) throw new Error('Memory not found');
+    return res.json();
   },
   async getAdjacentMemories(id) {
-    const ids = [1, 2, 3];
-    const idx = ids.indexOf(Number(id));
-    const prev = idx > 0 ? ids[idx - 1] : null;
-    const next = idx < ids.length - 1 ? ids[idx + 1] : null;
-    return { prev, next };
+    const res = await fetch(`/api/memories/adjacent/${id}`, { headers: authHeaders() });
+    if (!res.ok) return { prev: null, next: null };
+    return res.json();
+  },
+  async deleteMemory(id) {
+    const res = await fetch(`/api/memories/${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Ошибка удаления');
+    return res.json();
   }
 };
 
@@ -80,8 +81,14 @@ function init() {
     window.location.href = `../add-memory/index.html?edit=${memoryId}`;
   });
 
-  document.getElementById('delete-btn').addEventListener('click', () => {
-    if (confirm('Удалить воспоминание?')) window.location.href = '../map/index.html';
+  document.getElementById('delete-btn').addEventListener('click', async () => {
+    if (confirm('Удалить воспоминание?')) {
+      try {
+        await API.deleteMemory(memoryId);
+        const backHref = document.getElementById('back-link').getAttribute('href');
+        window.location.href = backHref || '../map/index.html';
+      } catch { alert('Ошибка удаления'); }
+    }
   });
 
   API.getMemory(memoryId).then(memory => {

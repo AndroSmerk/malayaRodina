@@ -1,23 +1,34 @@
+function authHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
   async getPlace(placeId) {
-    const places = {
-      3: { id: 3, name: 'ул. Центральная, д. 15', region: 'Красная Пахра' }
-    };
-    return places[placeId] || places[3];
+    const res = await fetch(`/api/places/${placeId}`, { headers: authHeaders() });
+    if (!res.ok) return { name: 'Место', region: '' };
+    const data = await res.json();
+    return { id: data.id, name: data.name, region: data.region };
   },
   async getNeighbors(placeId) {
-    return [
-      { id: 1, name: 'Валентина Степановна', role: 'Соседка', period: '1985–2010', type: 'family', memories: [1] },
-      { id: 2, name: 'Серёжка Кузнецов', role: 'Друг детства', period: '1995–2005', type: 'friend', memories: [1, 3] },
-      { id: 3, name: 'Дядя Коля', role: 'Сосед', period: '1990–2015', type: 'default', memories: [] },
-      { id: 4, name: 'Витька Соколов', role: 'Друг детства', period: '1995–2007', type: 'friend', memories: [3, 1] }
-    ];
+    const res = await fetch(`/api/neighbors/place/${placeId}`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
   },
   async saveNeighbor(data) {
-    return { id: Date.now(), ...data };
+    const res = await fetch(`/api/neighbors`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ ...data, placeId: data.placeId }),
+    });
+    if (!res.ok) throw new Error('Ошибка сохранения');
+    return res.json();
   },
   async deleteNeighbor(id) {
-    return true;
+    const res = await fetch(`/api/neighbors/${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error('Ошибка удаления');
+    return res.json();
   }
 };
 
@@ -98,7 +109,7 @@ async function init() {
     const role = document.getElementById('neighbor-role').value;
     const period = document.getElementById('neighbor-period').value.trim();
     if (!name) return;
-    const newNeighbor = await API.saveNeighbor({ name, role, period, type: 'default', memories: [] });
+    const newNeighbor = await API.saveNeighbor({ name, role, period, type: 'default', memories: [], placeId: state.placeId });
     state.neighbors.push(newNeighbor);
     renderNeighbors(state.neighbors);
     document.getElementById('add-form').classList.remove('open');

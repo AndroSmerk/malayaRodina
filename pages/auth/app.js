@@ -1,9 +1,19 @@
 const API = {
   async login(email, password) {
-    return { token: 'mock-token', user: { id: 1, name: 'Иван Петров', email } };
+    const res = await fetch(`/api/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) throw new Error('Ошибка входа');
+    return res.json();
   },
   async register(name, email, password) {
-    return { token: 'mock-token', user: { id: 1, name, email } };
+    const res = await fetch(`/api/auth/register`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    if (!res.ok) throw new Error('Ошибка регистрации');
+    return res.json();
   }
 };
 
