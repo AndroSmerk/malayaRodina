@@ -2,11 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import sys
 
 from database import engine, Base
-from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation
+from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation, settlements
 
 Base.metadata.create_all(bind=engine)
+
+from import_settlements import needs_import, run
+
+if needs_import():
+    print("Первичный импорт населённых пунктов (один раз)...")
+    sys.stdout.flush()
+    try:
+        run()
+    except Exception as e:
+        print(f"  ⚠ Ошибка импорта: {e}")
+        sys.stdout.flush()
 
 app = FastAPI(title="Малая Родина API")
 
@@ -30,6 +42,7 @@ app.include_router(apartments.router)
 app.include_router(family.router)
 app.include_router(public.router)
 app.include_router(moderation.router)
+app.include_router(settlements.router)
 
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)

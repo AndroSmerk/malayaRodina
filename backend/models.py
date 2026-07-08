@@ -15,6 +15,20 @@ neighbor_memory = Table(
 )
 
 
+class SettlementCatalog(Base):
+    __tablename__ = "settlement_catalog"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    name_ru = Column(String(255), default="")
+    type = Column(String(50), nullable=False)
+    region = Column(String(255), default="")
+    region_ru = Column(String(255), default="")
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    population = Column(Integer, default=0)
+
+
 class User(Base):
     __tablename__ = "users"
 

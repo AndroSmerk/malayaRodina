@@ -244,7 +244,9 @@ body {
 }
 
 .place-card .pin.village { background: #e8f5e9; }
+.place-card .pin.town { background: #f3e5f5; }
 .place-card .pin.city { background: #e3f2fd; }
+.place-card .pin.district { background: #fce4ec; }
 .place-card .pin.house { background: #fff3e0; }
 
 .place-card .place-info {
@@ -546,4 +548,43 @@ body {
 .hierarchy-results .result-item.create-new {
   color: #1a73e8;
   font-weight: 500;
+}
+
+.locality-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+  user-select: none;
+}
+.locality-type-badge.type-village { background: #e8f5e9; color: #2e7d32; }
+.locality-type-badge.type-town { background: #f3e5f5; color: #7b1fa2; }
+.locality-type-badge.type-city { background: #e3f2fd; color: #1565c0; }
+.locality-type-badge.type-district { background: #fce4ec; color: #c62828; }
+.locality-type-badge.type-house { background: #fff3e0; color: #e65100; }
+.locality-type-badge:hover { opacity: 0.8; }
+.locality-type-badge .lt-hint { font-size: 11px; font-weight: 400; opacity: 0.5; }
+
+.hierarchy-results .result-item .result-type {
+  font-size: 11px;
+  color: #999;
+  margin-left: 6px;
+}
+
+.hierarchy-results .result-item.external {
+  border-left: 3px solid #e0e0e0;
+}
+.hierarchy-results .result-item.external:hover {
+  border-left-color: #1a73e8;
+}
+.hierarchy-results .result-item .result-region {
+  font-size: 11px;
+  color: #aaa;
+  margin-left: 4px;
 }

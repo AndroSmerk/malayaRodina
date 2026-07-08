@@ -18,6 +18,8 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
+При первом запуске автоматически скачается каталог населённых пунктов России (202 тыс. записей из GeoNames). SQLite-база создаётся локально и не попадает в git.
+
 Открыть `http://localhost:8000/auth/`
 
 ## API endpoints
@@ -54,6 +56,8 @@ uvicorn main:app --reload --port 8000
 | POST | `/api/buildings` | Создать дом |
 | GET | `/api/apartments?building_id=&q=` | Поиск квартир |
 | POST | `/api/apartments` | Создать квартиру |
+| GET | `/api/settlements/search?q=` | Поиск населённых пунктов (без авторизации) |
+| GET | `/api/settlements/nearest?lat=&lng=` | Ближайший населённый пункт к координатам |
 | GET | `/api/family/members` | Список членов семьи |
 | POST | `/api/family/members` | Добавить члена семьи |
 | DELETE | `/api/family/members/{id}` | Удалить члена семьи |
@@ -76,6 +80,7 @@ malayaRodina/
 │   │                        #   User, Locality, Street, Building, Apartment, FamilyMember)
 │   ├── schemas.py           # Pydantic схемы
 │   ├── auth_utils.py        # JWT + хеширование
+│   ├── import_settlements.py # Импорт каталога населённых пунктов из GeoNames
 │   ├── requirements.txt
 │   ├── routers/
 │   │   ├── auth.py          # Регистрация / логин
@@ -89,7 +94,8 @@ malayaRodina/
 │   │   ├── localities.py    # Иерархия: населённые пункты
 │   │   ├── streets.py       # Иерархия: улицы
 │   │   ├── buildings.py     # Иерархия: дома
-│   │   └── apartments.py    # Иерархия: квартиры
+│   │   ├── apartments.py    # Иерархия: квартиры
+│   │   └── settlements.py   # Поиск + reverse geocoding по каталогу GeoNames
 │   └── uploads/             # Загруженные фото и видео
 ├── pages/                   # Фронтенд (статик файлы)
 │   ├── auth/                # Вход / регистрация
@@ -108,6 +114,9 @@ malayaRodina/
 ## Фичи
 
 - **Иерархия мест:** Населённый пункт → Улица → Дом → Квартира с автопоиском
+- **Каталог населённых пунктов:** 202 тыс. записей из GeoNames (автоимпорт при первом запуске), поиск по кириллице и латинице
+- **Reverse geocoding:** Клик на карте → автоматическое определение населённого пункта
+- **Типы населённых пунктов:** 🏙 Город, 🏡 Посёлок, 🏘 Деревня, 🏢 Район, 🏠 Дом
 - **Приватность:** Публичное / Семейный круг / Только я
 - **WYSIWYG:** Форматирование текста воспоминаний (Quill.js), XSS-защита (nh3)
 - **Сжатие фото:** Pillow — ресайз до 1920px, JPEG quality 85

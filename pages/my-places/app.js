@@ -10,12 +10,12 @@ function escHtml(text) {
 }
 
 function getTypeIcon(type) {
-  const icons = { village: '🏘', city: '🏙', house: '🏠' };
+  const icons = { village: '🏘', town: '🏡', city: '🏙', district: '🏢', house: '🏠' };
   return icons[type] || '📍';
 }
 
 function getTypeLabel(type) {
-  return { village: 'деревня', city: 'город', house: 'дом' }[type] || type;
+  return { village: 'деревня', town: 'посёлок', city: 'город', district: 'район', house: 'дом' }[type] || type;
 }
 
 async function init() {

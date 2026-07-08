@@ -9,6 +9,121 @@ function escHtml(text) {
   return d.innerHTML;
 }
 
+const TYPE_ICONS = { village: '🏘', town: '🏡', city: '🏙', district: '🏢', house: '🏠' };
+const TYPE_LABELS = { village: 'Деревня', town: 'Посёлок', city: 'Город', district: 'Район', house: 'Дом' };
+const TYPE_ORDER = ['village', 'town', 'city', 'district', 'house'];
+
+function detectLocalityType(name) {
+  const n = name.toLowerCase().trim();
+  if (!n) return null;
+
+  const knownCities = [
+    'москва', 'санкт-петербург', 'петербург', 'новосибирск', 'екатеринбург',
+    'казань', 'нижний новгород', 'челябинск', 'самара', 'омск',
+    'ростов-на-дону', 'уфа', 'красноярск', 'воронеж', 'пермь',
+    'волгоград', 'краснодар', 'саратов', 'тюмень', 'тольятти',
+    'барнаул', 'ижевск', 'хабаровск', 'ульяновск', 'иркутск',
+    'ярославль', 'кемерово', 'рязань', 'тула', 'киров',
+    'чебоксары', 'калининград', 'курск', 'ставрополь', 'тверь',
+    'магнитогорск', 'сочи', 'белгород', 'владимир', 'архангельск',
+    'калуга', 'смоленск', 'мурманск', 'владикавказ', 'тамбов',
+    'псков', 'кострома', 'новороссийск', 'таганрог', 'махачкала',
+    'нальчик', 'петрозаводск', 'саранск', 'йошкар-ола', 'грозный',
+    'курган', 'чистополь', 'симферополь', 'севастополь', 'донецк',
+    'луганск', 'обнинск', 'подольск', 'балашиха', 'химки',
+    'королёв', 'мытищи', 'люберцы', 'коломна', 'серпухов',
+    'орехово-зуево', 'сергиев посад', 'долгопрудный', 'реутов',
+    'череповец', 'дзержинск', 'орск', 'новочеркасск',
+    'рыбинск', 'бийск', 'ангарск', 'прокопьевск', 'нижнекамск',
+    'альметьевск', 'лениногорск', 'бугульма', 'елен', 'евпатория',
+    'феодосия', 'ялта', 'алушта', 'саки', 'джанкой',
+    'бахчисарай', 'бердянск', 'мариуполь', 'мелитополь', 'керчь',
+  ];
+
+  if (n.startsWith('дер.') || n.startsWith('деревня ') || n.startsWith('село ') || n.startsWith('с. ') || n.startsWith('д. ')) return 'village';
+  if (n.startsWith('город ') || n.endsWith(' город') || n.startsWith('г. ')) return 'city';
+  if (n.startsWith('пос.') || n.startsWith('посёлок ') || n.startsWith('пгт ')) return 'town';
+
+  if (/(град|бург|поль|полис|штадт|берг|ханск|цк)$/i.test(n)) return 'city';
+  if (/[аеёиоуыэюя](нск|вск|рск)$/i.test(n)) return 'city';
+
+  if (knownCities.includes(n)) return 'city';
+
+  if (/(ово|ево|ино|ыно|ено|ая|яя|ица|цы|овка|евка|инка|ушка|иха|уха|ское|цкое)$/i.test(n)) return 'village';
+
+  // Default for unrecognised: village
+  return 'village';
+}
+
+function updateTypeBadge(type) {
+  const badge = document.getElementById('locality-type-badge');
+  const icon = document.getElementById('lt-icon');
+  const label = document.getElementById('lt-label');
+  if (type) {
+    badge.style.display = 'inline-flex';
+    badge.className = 'locality-type-badge type-' + type;
+    icon.textContent = TYPE_ICONS[type] || '📍';
+    label.textContent = TYPE_LABELS[type] || type;
+    modal.localityType.value = type;
+  } else {
+    badge.style.display = 'none';
+    modal.localityType.value = '';
+  }
+}
+
+async function renderLocalityResults(q) {
+  const personal = await API.searchLocalities(q);
+
+  let external = [];
+  if (q.length >= 2) {
+    external = (await API.searchSettlements(q)).map(s => ({ ...s, id: null, external: true }));
+  }
+
+  const seenNames = new Set(personal.map(p => p.name.toLowerCase().trim()));
+  const merged = [...personal, ...external.filter(e => !seenNames.has(e.name.toLowerCase().trim()))];
+
+  let html = merged.map(item => {
+    if (item.id) {
+      return '<div class="result-item" data-id="' + item.id + '" data-name="' + escHtml(item.name) + '" data-type="' + item.type + '">'
+        + (TYPE_ICONS[item.type] || '📍') + ' ' + escHtml(item.name)
+        + ' <span class="result-type">' + (TYPE_LABELS[item.type] || item.type) + '</span>'
+        + '</div>';
+    }
+    return '<div class="result-item external" data-name="' + escHtml(item.name) + '" data-type="' + item.type + '" data-lat="' + item.lat + '" data-lng="' + item.lng + '" data-region="' + escHtml(item.region) + '">'
+      + '🌐 ' + (TYPE_ICONS[item.type] || '📍') + ' ' + escHtml(item.name)
+      + (item.region ? ' <span class="result-region">' + escHtml(item.region) + '</span>' : '')
+      + ' <span class="result-type">' + (TYPE_LABELS[item.type] || item.type) + '</span>'
+      + '</div>';
+  }).join('');
+
+  const dt = detectLocalityType(q);
+  html += '<div class="result-item create-new" data-create="true">➕ Создать «' + escHtml(q) + '»' + (dt ? ' ' + TYPE_ICONS[dt] : '') + '</div>';
+
+  modal.localityResults.innerHTML = html;
+
+  modal.localityResults.classList.add('open');
+
+  modal.localityResults.querySelectorAll('.result-item').forEach(el => {
+    el.addEventListener('click', () => {
+      if (el.dataset.create === 'true') {
+        modal.localityId.value = '__new__';
+        modal.localityLat.value = '';
+        modal.localityLng.value = '';
+        modal.localityRegion.value = '';
+      } else {
+        modal.localityId.value = el.dataset.id || '';
+        modal.localityLat.value = el.dataset.lat || '';
+        modal.localityLng.value = el.dataset.lng || '';
+        modal.localityRegion.value = el.dataset.region || '';
+        modal.localityInput.value = el.dataset.name;
+        if (el.dataset.type) updateTypeBadge(el.dataset.type);
+      }
+      modal.localityResults.classList.remove('open');
+      advanceStep('locality');
+    });
+  });
+}
+
 let pendingLat = null;
 let pendingLng = null;
 let searchTimeouts = {};
@@ -42,6 +157,11 @@ const API = {
   },
   async searchLocalities(q) {
     const res = await fetch(`/api/localities?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
+  },
+  async searchSettlements(q) {
+    const res = await fetch(`/api/settlements/search?q=${encodeURIComponent(q)}`);
     if (!res.ok) return [];
     return res.json();
   },
@@ -88,6 +208,11 @@ const API = {
     if (!res.ok) throw new Error('Ошибка создания квартиры');
     return res.json();
   },
+  async reverseGeocode(lat, lng) {
+    const res = await fetch(`/api/settlements/nearest?lat=${lat}&lng=${lng}`);
+    if (!res.ok) return null;
+    return res.json();
+  },
 };
 
 const modal = {
@@ -120,6 +245,21 @@ const modal = {
     this.overlay.classList.add('open');
     this.reset();
     setTimeout(() => this.localityInput.focus(), 150);
+    this.findNearestSettlement();
+  },
+
+  async findNearestSettlement() {
+    if (pendingLat == null || pendingLng == null) return;
+    try {
+      const result = await API.reverseGeocode(pendingLat, pendingLng);
+      if (!result || this.localityInput.value.trim()) return;
+      this.localityInput.value = result.name;
+      this.localityLat.value = result.lat;
+      this.localityLng.value = result.lng;
+      this.localityRegion.value = result.region || '';
+      updateTypeBadge(result.type);
+      advanceStep('locality');
+    } catch {}
   },
 
   close() {
@@ -142,6 +282,7 @@ const modal = {
     this.stepReset('building');
     this.stepReset('apartment');
     this.periodInput.value = '';
+    updateTypeBadge(null);
   },
 
   stepReset(name) {
@@ -155,7 +296,7 @@ const modal = {
     if (id) id.value = '';
   },
 
-  async searchAndShow(apiMethod, inputEl, resultsEl, idField, stepName, extraParams) {
+  async searchAndShow(apiMethod, inputEl, resultsEl, idField, stepName, extraParams, showType) {
     const q = inputEl.value.trim();
     if (q.length < 1) { resultsEl.classList.remove('open'); return; }
     clearTimeout(searchTimeouts[stepName]);
@@ -163,13 +304,16 @@ const modal = {
       try {
         const items = await apiMethod(q, extraParams);
         if (!items.length) {
-          resultsEl.innerHTML = `<div class="result-item create-new" data-create="true">➕ Создать «${escHtml(q)}»</div>`;
+          const dt = showType ? detectLocalityType(q) : null;
+          resultsEl.innerHTML = `<div class="result-item create-new" data-create="true">➕ Создать «${escHtml(q)}»${dt ? ' ' + TYPE_ICONS[dt] : ''}</div>`;
         } else {
-          resultsEl.innerHTML = items.map(item =>
-            `<div class="result-item" data-id="${item.id}" data-name="${escHtml(item.name || item.number)}">
-              ${escHtml(item.name || item.number)}
-            </div>`
-          ).join('');
+          resultsEl.innerHTML = items.map(item => {
+            const typeIcon = (showType && item.type) ? TYPE_ICONS[item.type] + ' ' : '';
+            const typeLabel = (showType && item.type) ? `<span class="result-type">${TYPE_LABELS[item.type] || item.type}</span>` : '';
+            return `<div class="result-item" data-id="${item.id}" data-name="${escHtml(item.name || item.number)}"${item.type ? ' data-type="' + item.type + '"' : ''}>
+              ${typeIcon}${escHtml(item.name || item.number)}${typeLabel}
+            </div>`;
+          }).join('');
         }
         resultsEl.classList.add('open');
         resultsEl.querySelectorAll('.result-item').forEach(el => {
@@ -180,6 +324,9 @@ const modal = {
             } else {
               idField.value = el.dataset.id;
               inputEl.value = el.dataset.name;
+              if (stepName === 'locality' && el.dataset.type) {
+                updateTypeBadge(el.dataset.type);
+              }
             }
             resultsEl.classList.remove('open');
             advanceStep(stepName);
@@ -209,6 +356,13 @@ modal.overlay.addEventListener('click', e => {
   if (e.target === modal.overlay) modal.close();
 });
 
+document.getElementById('locality-type-badge').addEventListener('click', function() {
+  const current = modal.localityType.value || 'village';
+  const idx = TYPE_ORDER.indexOf(current);
+  const next = TYPE_ORDER[(idx + 1) % TYPE_ORDER.length];
+  updateTypeBadge(next);
+});
+
 document.addEventListener('click', e => {
   if (!e.target.closest('.hierarchy-search')) {
     document.querySelectorAll('.hierarchy-results.open').forEach(el => el.classList.remove('open'));
@@ -217,13 +371,31 @@ document.addEventListener('click', e => {
 
 modal.localityInput.addEventListener('input', () => {
   modal.localityId.value = '';
+  modal.localityLat.value = '';
+  modal.localityLng.value = '';
+  modal.localityRegion.value = '';
   modal.stepReset('street');
   modal.stepReset('building');
   modal.stepReset('apartment');
-  modal.searchAndShow(
-    (q) => API.searchLocalities(q),
-    modal.localityInput, modal.localityResults, modal.localityId, 'locality'
-  );
+
+  const q = modal.localityInput.value.trim();
+  const detected = detectLocalityType(q);
+  updateTypeBadge(detected);
+
+  if (q.length < 1) {
+    modal.localityResults.classList.remove('open');
+    modal.localityResults.innerHTML = '';
+    return;
+  }
+
+  clearTimeout(searchTimeouts.locality);
+  searchTimeouts.locality = setTimeout(async () => {
+    try {
+      await renderLocalityResults(q);
+    } catch {
+      modal.localityResults.classList.remove('open');
+    }
+  }, 600);
 });
 
 modal.streetInput.addEventListener('input', () => {
@@ -259,8 +431,11 @@ modal.submitBtn.addEventListener('click', async () => {
     let localityId = modal.localityId.value;
     if (!localityId || localityId === '__new__') {
       const loc = await API.createLocality({
-        name, lat: pendingLat, lng: pendingLng,
-        type: 'village', region: '',
+        name,
+        lat: modal.localityLat.value || pendingLat,
+        lng: modal.localityLng.value || pendingLng,
+        type: modal.localityType.value || detectLocalityType(name),
+        region: modal.localityRegion.value || '',
       });
       localityId = loc.id;
     } else {
@@ -312,7 +487,7 @@ modal.submitBtn.addEventListener('click', async () => {
     const placeData = {
       name,
       lat: pendingLat, lng: pendingLng,
-      type: 'village', region: '',
+      type: modal.localityType.value || detectLocalityType(name), region: '',
       period: modal.periodInput.value.trim(),
       visibility: modal.visibilitySelect.value,
       locality_id: localityId,
@@ -350,11 +525,11 @@ modal.localityInput.addEventListener('keydown', e => {
   }
 });
 
-let state = { places: [], markers: [], searchTimeout: null, filter: { types: ['village', 'city', 'house'], period: '' } };
+let state = { places: [], markers: [], searchTimeout: null, filter: { types: ['village', 'town', 'city', 'district', 'house'], period: '' } };
 let map;
 
 function getTypeIcon(type) {
-  const icons = { village: '🏘', city: '🏙', house: '🏠' };
+  const icons = { village: '🏘', town: '🏡', city: '🏙', district: '🏢', house: '🏠' };
   return icons[type] || '📍';
 }
 
@@ -375,7 +550,7 @@ function renderPlaces(places) {
         <div class="place-name">${addr}</div>
         <div class="place-meta">
           <span>${visIcon}</span>
-          <span>📍 ${p.type === 'village' ? 'деревня' : p.type === 'city' ? 'город' : 'дом'}</span>
+          <span>📍 ${p.type === 'village' ? 'деревня' : p.type === 'town' ? 'посёлок' : p.type === 'city' ? 'город' : p.type === 'district' ? 'район' : 'дом'}</span>
           ${p.period ? `<span>📅 ${escHtml(p.period)}</span>` : ''}
           ${p.photos ? `<span>📸 ${p.photos} фото</span>` : ''}
           ${p.videos ? `<span>🎬 ${p.videos} видео</span>` : ''}
@@ -476,6 +651,8 @@ async function init() {
     attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a>',
     maxZoom: 18
   }).addTo(map);
+  map.options.maxBoundsViscosity = 1.0;
+  map.setMaxBounds([[41.0, 19.0], [82.0, 180.0]]);
 
   try {
     state.places = await API.getPlaces();

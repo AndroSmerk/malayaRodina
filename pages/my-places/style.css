@@ -42,7 +42,9 @@ body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #1a1a2e; }
   font-size: 28px; flex-shrink: 0;
 }
 .card-pin.village { background: #e8f5e9; }
+.card-pin.town { background: #f3e5f5; }
 .card-pin.city { background: #e3f2fd; }
+.card-pin.district { background: #fce4ec; }
 .card-pin.house { background: #fff3e0; }
 
 .card-body { flex: 1; padding: 16px; }

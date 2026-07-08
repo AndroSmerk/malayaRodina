@@ -37,11 +37,11 @@ function escHtml(text) {
 }
 
 function getTypeIcon(type) {
-  return { village: '🏘', city: '🏙', house: '🏠' }[type] || '📍';
+  return { village: '🏘', town: '🏡', city: '🏙', district: '🏢', house: '🏠' }[type] || '📍';
 }
 
 function getTypeLabel(type) {
-  return { village: 'деревня', city: 'город', house: 'дом' }[type] || type;
+  return { village: 'деревня', town: 'посёлок', city: 'город', district: 'район', house: 'дом' }[type] || type;
 }
 
 function renderHero(place) {
