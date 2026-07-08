@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Neighbor, Place, User
+from models import Neighbor, Place, User, Memory
 from schemas import NeighborCreate, NeighborResponse
 from auth_utils import get_current_user
 
@@ -15,13 +15,14 @@ def list_neighbors(place_id: int, db: Session = Depends(get_db), user: User = De
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
     neighbors = db.query(Neighbor).filter(Neighbor.place_id == place_id).all()
-    return [
-        NeighborResponse(
+    result = []
+    for n in neighbors:
+        memory_ids = [m.id for m in n.linked_memories]
+        result.append(NeighborResponse(
             id=n.id, name=n.name, role=n.role,
-            period=n.period, type=n.type, memories=[],
-        )
-        for n in neighbors
-    ]
+            period=n.period, type=n.type, memories=memory_ids,
+        ))
+    return result
 
 
 @router.post("", response_model=NeighborResponse)
@@ -50,4 +51,32 @@ def delete_neighbor(neighbor_id: int, db: Session = Depends(get_db), user: User 
         raise HTTPException(status_code=404, detail="Neighbor not found")
     db.delete(neighbor)
     db.commit()
+    return {"ok": True}
+
+
+@router.post("/{neighbor_id}/link/{memory_id}")
+def link_neighbor_to_memory(neighbor_id: int, memory_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    neighbor = db.query(Neighbor).filter(Neighbor.id == neighbor_id, Neighbor.user_id == user.id).first()
+    if not neighbor:
+        raise HTTPException(status_code=404, detail="Neighbor not found")
+    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    if memory not in neighbor.linked_memories:
+        neighbor.linked_memories.append(memory)
+        db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{neighbor_id}/link/{memory_id}")
+def unlink_neighbor_from_memory(neighbor_id: int, memory_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    neighbor = db.query(Neighbor).filter(Neighbor.id == neighbor_id, Neighbor.user_id == user.id).first()
+    if not neighbor:
+        raise HTTPException(status_code=404, detail="Neighbor not found")
+    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    if memory in neighbor.linked_memories:
+        neighbor.linked_memories.remove(memory)
+        db.commit()
     return {"ok": True}

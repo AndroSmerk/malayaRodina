@@ -45,12 +45,20 @@ function getTypeLabel(type) {
 }
 
 function renderHero(place) {
+  let addressParts = [escHtml(place.name)];
+  if (place.street_name) addressParts.push(escHtml(place.street_name));
+  if (place.building_number) addressParts.push(`д. ${escHtml(place.building_number)}`);
+  if (place.apartment_number) addressParts.push(`кв. ${escHtml(place.apartment_number)}`);
+  const addressLine = addressParts.join(', ');
+
   document.getElementById('place-hero').innerHTML = `
     <div class="place-hero-inner">
       <div class="place-info-section">
         <div class="place-type">${getTypeIcon(place.type)} ${getTypeLabel(place.type).charAt(0).toUpperCase() + getTypeLabel(place.type).slice(1)}</div>
-        <h1>${escHtml(place.name)}</h1>
+        <h1>${addressLine}</h1>
         <div class="place-address">${escHtml(place.region)}</div>
+        ${place.period ? `<div class="place-period">📅 ${escHtml(place.period)}</div>` : ''}
+        ${place.locality_name ? `<div class="place-locality">🏘 ${escHtml(place.locality_name)}</div>` : ''}
         <div class="place-stats">
           <div class="stat"><div class="stat-value">${place.memories}</div><div class="stat-label">воспоминаний</div></div>
           <div class="stat"><div class="stat-value">${place.photos}</div><div class="stat-label">фото</div></div>
@@ -60,12 +68,14 @@ function renderHero(place) {
         <div class="place-actions">
           <a href="../add-memory/index.html?placeId=${place.id}" class="btn-primary">+ Добавить воспоминание</a>
           <a href="../neighbors/index.html?placeId=${place.id}" class="btn-secondary">👥 Соседи</a>
+          <button class="btn-danger" id="delete-place-btn">🗑 Удалить место</button>
         </div>
       </div>
       <div class="place-map"><div id="mini-map"></div></div>
     </div>`;
 
   const miniMap = L.map('mini-map', { zoomControl: false, dragging: false, scrollWheelZoom: false });
+  miniMap.attributionControl.setPrefix(false);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(miniMap);
   L.marker(place.coords).addTo(miniMap);
   miniMap.setView(place.coords, 15);
@@ -98,14 +108,17 @@ function renderMemories(memories) {
     container.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>Воспоминаний пока нет</p></div>';
     return;
   }
-  container.innerHTML = memories.map(m =>
-    `<div class="memory-card" data-id="${m.id}">
-      <div class="meta">📅 ${escHtml(m.date)} — 🏷 ${escHtml(m.category)}</div>
+  container.innerHTML = memories.map(m => {
+    const visIcon = m.visibility === 'public' ? '🌍' : m.visibility === 'family' ? '👨‍👩‍👧‍👧' : '🔒';
+    const statusBadge = m.status === 'pending' ? ' ⏳' : m.status === 'rejected' ? ' 🚫' : '';
+    const plainText = m.text.replace(/<[^>]*>/g, '').slice(0, 200);
+    return `<div class="memory-card" data-id="${m.id}">
+      <div class="meta">📅 ${escHtml(m.date)} — 🏷 ${escHtml(m.category)} ${visIcon}${statusBadge}</div>
       <h3>${escHtml(m.title)}</h3>
-      <p>${escHtml(m.text)}</p>
-      ${m.media.length ? `<div class="media-previews">${m.media.map(md => `<div class="thumb">${md}</div>`).join('')}</div>` : ''}
-    </div>`
-  ).join('');
+      <p>${escHtml(plainText)}</p>
+      ${m.media.length ? `<div class="media-previews">${m.media.map(url => url.match(/\.(mp4|webm|ogg)$/i) ? `<video src="${url}" class="thumb" muted></video>` : `<img src="${url}" class="thumb">`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
 
   container.querySelectorAll('.memory-card').forEach(el => {
     el.addEventListener('click', () => {
@@ -144,6 +157,7 @@ async function init() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('user-avatar').addEventListener('click', () => { window.location.href = '../profile/index.html'; });
 
   try {
     state.place = await API.getPlace(placeId);
@@ -161,6 +175,14 @@ async function init() {
     renderPhotos(state.photos);
     renderVideos(state.videos);
   }
+
+  document.getElementById('delete-place-btn')?.addEventListener('click', async () => {
+    if (!confirm('Удалить место? Все воспоминания, фото и видео будут безвозвратно удалены.')) return;
+    try {
+      await fetch(`/api/places/${placeId}`, { method: 'DELETE', headers: authHeaders() });
+      window.location.href = '../map/index.html';
+    } catch { alert('Ошибка удаления'); }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

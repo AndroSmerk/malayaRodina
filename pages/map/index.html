@@ -11,12 +11,14 @@
 <body>
   <header class="topbar">
     <div class="topbar-left">
-      <a href="../auth/index.html" class="topbar-logo">🌿 Малая Родина</a>
+      <a href="../map/index.html" class="topbar-logo">🌿 Малая Родина</a>
       <nav class="topbar-nav">
         <a href="#" class="active">Карта</a>
         <a href="../my-places/index.html">Мои места</a>
         <a href="../profile/index.html">Хроника</a>
         <a href="../neighbors/index.html">Соседи</a>
+        <a href="../family/index.html">Семья</a>
+        <a href="../moderation/index.html">Модерация</a>
       </nav>
     </div>
     <div class="topbar-right">
@@ -34,14 +36,87 @@
         </div>
       </div>
 
-      <div class="places-scroll" id="places-list"></div>
+      <div class="filter-bar">
+        <div class="filter-types">
+          <label><input type="checkbox" class="filter-type" value="village" checked> 🏘 деревня</label>
+          <label><input type="checkbox" class="filter-type" value="city" checked> 🏙 город</label>
+          <label><input type="checkbox" class="filter-type" value="house" checked> 🏠 дом</label>
+        </div>
+        <div class="filter-period">
+          <input type="text" id="filter-period" placeholder="Период (например, 1985)">
+        </div>
+      </div>
 
-      <button class="add-place-btn" id="add-place-btn">+ Добавить место</button>
+      <div class="places-scroll" id="places-list"></div>
     </aside>
 
     <div class="map-area">
       <div id="map"></div>
-      <button class="fab" id="fab">+</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal modal-hierarchy">
+      <div class="modal-header">
+        <h3>Новое место</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="hierarchy-step">
+          <label>Населённый пункт <span class="required">*</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="locality-input" placeholder="Начните вводить название..." autocomplete="off">
+            <div class="hierarchy-results" id="locality-results"></div>
+          </div>
+          <input type="hidden" id="locality-id">
+          <input type="hidden" id="locality-lat">
+          <input type="hidden" id="locality-lng">
+          <input type="hidden" id="locality-region">
+          <input type="hidden" id="locality-type">
+        </div>
+
+        <div class="hierarchy-step" id="street-step" style="display:none">
+          <label>Улица <span class="optional">необязательно</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="street-input" placeholder="Название улицы" autocomplete="off">
+            <div class="hierarchy-results" id="street-results"></div>
+          </div>
+          <input type="hidden" id="street-id">
+        </div>
+
+        <div class="hierarchy-step" id="building-step" style="display:none">
+          <label>Дом <span class="optional">необязательно</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="building-input" placeholder="Номер дома" autocomplete="off">
+            <div class="hierarchy-results" id="building-results"></div>
+          </div>
+          <input type="hidden" id="building-id">
+        </div>
+
+        <div class="hierarchy-step" id="apartment-step" style="display:none">
+          <label>Квартира / Комната <span class="optional">необязательно</span></label>
+          <input type="text" id="apartment-input" placeholder="№ квартиры">
+          <input type="hidden" id="apartment-id">
+        </div>
+
+        <div class="hierarchy-step" style="margin-top:8px">
+          <label>Период проживания <span class="optional">необязательно</span></label>
+          <input type="text" id="place-period" placeholder="например, 1985–1998">
+        </div>
+
+        <div class="hierarchy-step">
+          <label>Видимость</label>
+          <select id="place-visibility">
+            <option value="private">🔒 Только я</option>
+            <option value="family">👨‍👩‍👧‍👧 Семейный круг</option>
+            <option value="public">🌍 Публичное</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="modal-cancel">Отмена</button>
+        <button class="btn-submit" id="modal-submit">Добавить</button>
+      </div>
     </div>
   </div>
 

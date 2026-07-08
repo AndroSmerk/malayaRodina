@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from database import engine, Base
-from routers import auth, places, memories, neighbors, profile
+from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,13 @@ app.include_router(places.router)
 app.include_router(memories.router)
 app.include_router(neighbors.router)
 app.include_router(profile.router)
+app.include_router(localities.router)
+app.include_router(streets.router)
+app.include_router(buildings.router)
+app.include_router(apartments.router)
+app.include_router(family.router)
+app.include_router(public.router)
+app.include_router(moderation.router)
 
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(uploads_dir, exist_ok=True)

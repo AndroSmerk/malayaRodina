@@ -43,6 +43,13 @@ body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #1a1a2e; }
   cursor: pointer; font-family: inherit;
 }
 .edit-profile-btn:hover { background: #e3edff; }
+.logout-btn {
+  display: block; margin-top: 12px; padding: 8px 18px;
+  background: none; border: 1px solid #ddd; color: #888;
+  border-radius: 8px; font-size: 13px; font-weight: 500;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.logout-btn:hover { border-color: #e53935; color: #e53935; }
 
 .stats-row {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;

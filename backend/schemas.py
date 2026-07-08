@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 
 
@@ -18,12 +18,84 @@ class TokenResponse(BaseModel):
     user: dict
 
 
+class LocalityCreate(BaseModel):
+    name: str
+    type: str = "village"
+    lat: float
+    lng: float
+    region: str = ""
+
+
+class LocalityResponse(BaseModel):
+    id: int
+    name: str
+    type: str
+    lat: float
+    lng: float
+    region: str
+
+    class Config:
+        from_attributes = True
+
+
+class StreetCreate(BaseModel):
+    name: str
+    locality_id: int
+
+
+class StreetResponse(BaseModel):
+    id: int
+    name: str
+    locality_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class BuildingCreate(BaseModel):
+    number: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    street_id: int
+
+
+class BuildingResponse(BaseModel):
+    id: int
+    number: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    street_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class ApartmentCreate(BaseModel):
+    number: str
+    building_id: int
+
+
+class ApartmentResponse(BaseModel):
+    id: int
+    number: str
+    building_id: int
+
+    class Config:
+        from_attributes = True
+
+
 class PlaceCreate(BaseModel):
     name: str
     type: str = "village"
     lat: float
     lng: float
     region: str = ""
+    period: str = ""
+    visibility: str = "private"
+    locality_id: Optional[int] = None
+    street_id: Optional[int] = None
+    building_id: Optional[int] = None
+    apartment_id: Optional[int] = None
 
 
 class PlaceResponse(BaseModel):
@@ -33,6 +105,16 @@ class PlaceResponse(BaseModel):
     lat: float
     lng: float
     region: str
+    period: str = ""
+    visibility: str = "private"
+    locality_id: Optional[int] = None
+    street_id: Optional[int] = None
+    building_id: Optional[int] = None
+    apartment_id: Optional[int] = None
+    locality_name: str = ""
+    street_name: str = ""
+    building_number: str = ""
+    apartment_number: str = ""
     photos: int = 0
     videos: int = 0
     neighbors: int = 0
@@ -48,6 +130,7 @@ class MemoryCreate(BaseModel):
     title: str = ""
     date: str = ""
     category: str = ""
+    visibility: str = "private"
 
 
 class MemoryResponse(BaseModel):
@@ -56,6 +139,8 @@ class MemoryResponse(BaseModel):
     text: str
     date: str
     category: str
+    visibility: str = "private"
+    status: str = "approved"
     placeId: int
     placeName: str = ""
     placeRegion: str = ""
@@ -82,6 +167,21 @@ class NeighborResponse(BaseModel):
     period: str
     type: str
     memories: list = []
+
+    class Config:
+        from_attributes = True
+
+
+class FamilyMemberCreate(BaseModel):
+    email: str
+
+
+class FamilyMemberResponse(BaseModel):
+    id: int
+    relative_id: int
+    name: str
+    email: str
+    avatar: str = ""
 
     class Config:
         from_attributes = True

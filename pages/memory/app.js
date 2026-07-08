@@ -20,7 +20,22 @@ const API = {
     });
     if (!res.ok) throw new Error('Ошибка удаления');
     return res.json();
-  }
+  },
+  async getNeighbors(memoryId) {
+    const res = await fetch(`/api/memories/${memoryId}/neighbors`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
+  },
+  async linkNeighbor(neighborId, memoryId) {
+    await fetch(`/api/neighbors/${neighborId}/link/${memoryId}`, {
+      method: 'POST', headers: authHeaders(),
+    });
+  },
+  async unlinkNeighbor(neighborId, memoryId) {
+    await fetch(`/api/neighbors/${neighborId}/link/${memoryId}`, {
+      method: 'DELETE', headers: authHeaders(),
+    });
+  },
 };
 
 let state = { memory: null };
@@ -32,7 +47,8 @@ function escHtml(text) {
 }
 
 function renderMemory(memory) {
-  const paragraphs = memory.text.split('\n\n').map(p => `<p>${escHtml(p)}</p>`).join('');
+  const visIcon = memory.visibility === 'public' ? '🌍' : memory.visibility === 'family' ? '👨‍👩‍👧‍👧' : '🔒';
+  const statusBadge = memory.status === 'pending' ? ' ⏳' : memory.status === 'rejected' ? ' 🚫' : '';
 
   let mediaHtml = '';
   if (memory.photos?.length || memory.videos?.length) {
@@ -50,12 +66,23 @@ function renderMemory(memory) {
       <div class="meta">
         <span>📅 ${escHtml(memory.date)}</span>
         <span>🏷 ${escHtml(memory.category)}</span>
+        <span>${visIcon}${statusBadge}</span>
       </div>
       <h1>${escHtml(memory.title)}</h1>
       <a href="../place/index.html?id=${memory.placeId}" class="location">📍 ${escHtml(memory.placeName)}, ${escHtml(memory.placeRegion)}</a>
     </div>
     ${mediaHtml}
-    <div class="memory-text">${paragraphs}</div>`;
+    <div class="memory-text">${memory.text}</div>`;
+}
+
+function renderNeighbors(neighbors, memoryId) {
+  const container = document.getElementById('memory-neighbors');
+  const list = document.getElementById('neighbors-list');
+  if (!neighbors.length) { container.style.display = 'none'; return; }
+  container.style.display = 'block';
+  list.innerHTML = neighbors.map(n =>
+    `<span class="neighbor-tag">${escHtml(n.name)} ${n.role ? `(${escHtml(n.role)})` : ''}</span>`
+  ).join('');
 }
 
 function renderNav(prev, next) {
@@ -76,6 +103,7 @@ function init() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('user-avatar').addEventListener('click', () => { window.location.href = '../profile/index.html'; });
 
   const backLink = document.getElementById('back-link');
   const placeId = new URLSearchParams(window.location.search).get('placeId');
@@ -101,6 +129,10 @@ function init() {
     if (memory.placeId && !placeId) {
       backLink.href = `../place/index.html?id=${memory.placeId}`;
     }
+  });
+
+  API.getNeighbors(memoryId).then(neighbors => {
+    renderNeighbors(neighbors, memoryId);
   });
 
   API.getAdjacentMemories(memoryId).then(({ prev, next }) => renderNav(prev, next));

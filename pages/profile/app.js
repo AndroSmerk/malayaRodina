@@ -35,6 +35,7 @@ function renderProfile(profile) {
       <div class="email">${escHtml(profile.email)}</div>
       <div class="bio">${escHtml(profile.bio)}</div>
       <button class="edit-profile-btn">✏️ Редактировать профиль</button>
+    <button class="logout-btn" id="logout-btn">🚪 Выйти</button>
     </div>`;
 }
 
@@ -73,6 +74,7 @@ async function init() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('user-avatar').addEventListener('click', () => { window.location.href = '../profile/index.html'; });
 
   let profile, stats, memories;
   try {
@@ -86,6 +88,12 @@ async function init() {
   if (profile) renderProfile(profile);
   if (stats) renderStats(stats);
   if (memories) renderMemories(memories);
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '../auth/index.html';
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

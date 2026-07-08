@@ -86,6 +86,7 @@ async function init() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (user.name) document.getElementById('user-avatar').textContent =
     user.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  document.getElementById('user-avatar').addEventListener('click', () => { window.location.href = '../profile/index.html'; });
 
   const backLink = document.getElementById('back-link');
   backLink.href = `../place/index.html?id=${state.placeId}`;
