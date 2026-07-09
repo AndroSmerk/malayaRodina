@@ -15,6 +15,14 @@ const API = {
     const res = await fetch(`/api/profile/memories`, { headers: jsonHeaders() })
     if (!res.ok) return []
     return res.json()
+  },
+  async updateProfile(data) {
+    const res = await fetch('/api/profile', {
+      method: 'PUT', headers: jsonHeaders(),
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error('Ошибка обновления профиля')
+    return res.json()
   }
 }
 
@@ -84,6 +92,39 @@ async function init() {
     await fetch('/api/auth/logout', { method: 'POST' })
     localStorage.removeItem('user')
     window.location.href = '/auth/'
+  })
+
+  document.getElementById('edit-profile-btn')?.addEventListener('click', () => {
+    document.getElementById('edit-name').value = profile.name
+    document.getElementById('edit-bio').value = profile.bio || ''
+    document.getElementById('edit-modal').classList.add('open')
+  })
+
+  document.getElementById('edit-cancel')?.addEventListener('click', () => {
+    document.getElementById('edit-modal').classList.remove('open')
+  })
+
+  document.getElementById('edit-modal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('edit-modal').classList.remove('open')
+    }
+  })
+
+  document.getElementById('edit-form')?.addEventListener('submit', async e => {
+    e.preventDefault()
+    const name = document.getElementById('edit-name').value.trim()
+    const bio = document.getElementById('edit-bio').value.trim()
+    if (!name) return
+    try {
+      const updated = await API.updateProfile({ name, bio })
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      user.name = name
+      localStorage.setItem('user', JSON.stringify(user))
+      document.getElementById('edit-modal').classList.remove('open')
+      if (updated) renderProfile(updated)
+    } catch {
+      alert('Ошибка обновления профиля')
+    }
   })
 }
 

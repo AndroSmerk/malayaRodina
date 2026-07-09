@@ -2,6 +2,15 @@ import { jsonHeaders, escHtml } from '../shared/api.js'
 import { TYPE_ICONS, TYPE_LABELS, TYPE_ORDER, getTypeIcon, getTypeLabel } from '../shared/icons.js'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+})
 
 function detectLocalityType(name) {
   const n = name.toLowerCase().trim()
@@ -121,7 +130,7 @@ const API = {
     const res = await fetch('/api/places', { headers: jsonHeaders() })
     if (!res.ok) return []
     const data = await res.json()
-    return data.map(p => ({ ...p, coords: [p.lat, p.lng] }))
+    return (data.items || data).map(p => ({ ...p, coords: [p.lat, p.lng] }))
   },
   async createPlace(data) {
     const res = await fetch('/api/places', {
@@ -618,7 +627,7 @@ async function init() {
       const res = await fetch('/api/public/places')
       if (res.ok) {
         const data = await res.json()
-        state.places = data.map(p => ({ ...p, coords: [p.lat, p.lng] }))
+        state.places = (data.items || data).map(p => ({ ...p, coords: [p.lat, p.lng] }))
       }
     } catch {}
   }

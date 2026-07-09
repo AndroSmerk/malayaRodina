@@ -29,6 +29,20 @@
     <div id="memories-list"></div>
   </div>
 
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <h2>Редактировать профиль</h2>
+      <form id="edit-form">
+        <label>Имя <input type="text" id="edit-name" required></label>
+        <label>О себе <textarea id="edit-bio" rows="3"></textarea></label>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="edit-cancel">Отмена</button>
+          <button type="submit" class="btn-save">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>
