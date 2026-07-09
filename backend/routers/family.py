@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import User, FamilyMember
 from schemas import FamilyMemberCreate, FamilyMemberResponse
 from auth_utils import get_current_user
+from limiter import limiter
 
 router = APIRouter(prefix="/api/family", tags=["family"])
 
@@ -23,7 +24,8 @@ def list_family(db: Session = Depends(get_db), user: User = Depends(get_current_
 
 
 @router.post("/members", response_model=FamilyMemberResponse)
-def add_family_member(body: FamilyMemberCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+@limiter.limit("10/hour")
+def add_family_member(request: Request, body: FamilyMemberCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     relative = db.query(User).filter(User.email == body.email).first()
     if not relative:
         raise HTTPException(status_code=404, detail="User with this email not found")

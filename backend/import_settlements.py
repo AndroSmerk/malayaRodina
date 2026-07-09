@@ -9,6 +9,7 @@ import io
 import os
 import re
 import sqlite3
+import sys
 import urllib.request
 import zipfile
 
@@ -138,10 +139,50 @@ def name_is_likely_city(name):
     return False
 
 
-def download(url, dest):
+def check_zip(path):
+    """Проверяет, что файл — валидный ZIP и содержит RU.txt."""
+    try:
+        with zipfile.ZipFile(path) as zf:
+            if 'RU.txt' not in zf.namelist():
+                return False
+            bad = zf.testzip()
+            if bad:
+                print(f"  ⚠ Повреждённый файл в zip: {bad}")
+                return False
+            return True
+    except (zipfile.BadZipFile, zipfile.LargeZipFile):
+        return False
+
+
+def download(url, dest, timeout=120):
     print(f"  Скачивание {url}...")
-    urllib.request.urlretrieve(url, dest)
-    print(f"  → {dest}")
+    sys.stdout.flush()
+    tmp = dest + ".tmp"
+    req = urllib.request.Request(url, headers={"User-Agent": "MalayaRodina/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            total = int(resp.headers.get("Content-Length", 0))
+            downloaded = 0
+            chunk_size = 65536
+            with open(tmp, "wb") as f:
+                while True:
+                    chunk = resp.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total:
+                        pct = downloaded * 100 // total
+                        print(f"\r  {downloaded // 1024}K / {total // 1024}K ({pct}%)", end="", flush=True)
+                    else:
+                        print(f"\r  {downloaded // 1024}K", end="", flush=True)
+        os.replace(tmp, dest)
+        print(f"\n  → {dest}")
+        sys.stdout.flush()
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
 
 
 TRANS_TABLE = str.maketrans({
@@ -221,13 +262,25 @@ def run():
     txt_path = os.path.join(DATA_DIR, "RU.txt")
     admin1_path = os.path.join(DATA_DIR, "admin1CodesASCII.txt")
 
-    # Download
+    # Download / validate RU.zip
+    if os.path.exists(zip_path) and not check_zip(zip_path):
+        print("  ⚠ RU.zip повреждён, удаляю и качаю заново...")
+        os.remove(zip_path)
+        if os.path.exists(txt_path):
+            os.remove(txt_path)
+
     if not os.path.exists(zip_path):
         try:
-            download(GEONAMES_URL, zip_path)
+            download(GEONAMES_URL, zip_path, timeout=180)
         except Exception as e:
             print(f"  ⚠ Не удалось скачать RU.zip: {e}")
             return
+        if not check_zip(zip_path):
+            print(f"  ⚠ Скачанный файл не является ZIP-архивом")
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            return
+
     if not os.path.exists(admin1_path):
         try:
             download(ADMIN1_URL, admin1_path)
@@ -238,6 +291,7 @@ def run():
     # Extract zip
     if not os.path.exists(txt_path):
         print("  Распаковка RU.zip...")
+        sys.stdout.flush()
         with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extract("RU.txt", DATA_DIR)
 
@@ -324,6 +378,7 @@ def run():
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_settlement_name ON settlement_catalog(name)")
     conn.commit()
+    conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     conn.close()
 
     print(f"  ✓ Импортировано {len(rows)} населённых пунктов")

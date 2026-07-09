@@ -1,80 +1,69 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from database import get_db
-from models import Place, Memory, Neighbor, Photo, Video, User, Locality, Street, Building, Apartment
+from models import Place, Memory, Photo, Video, User, FamilyMember
 from schemas import PlaceResponse, MemoryResponse
 from auth_utils import get_optional_user
+from routers.common import enrich_places, enrich_place, media_url, can_access_place, can_access_memory, paginate, PaginatedResponse
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
 
-def _enrich_place(p: Place, db: Session) -> PlaceResponse:
-    photos_count = db.query(func.count(Photo.id)).filter(Photo.place_id == p.id).scalar()
-    videos_count = db.query(func.count(Video.id)).filter(Video.place_id == p.id).scalar()
-    neighbors_count = db.query(func.count(Neighbor.id)).filter(Neighbor.place_id == p.id).scalar()
-    memories_count = db.query(func.count(Memory.id)).filter(Memory.place_id == p.id, Memory.visibility == "public").scalar()
-
-    locality_name = ""
-    street_name = ""
-    building_number = ""
-    apartment_number = ""
-    if p.locality_id:
-        loc = db.query(Locality).filter(Locality.id == p.locality_id).first()
-        if loc: locality_name = loc.name
-    if p.street_id:
-        s = db.query(Street).filter(Street.id == p.street_id).first()
-        if s: street_name = s.name
-    if p.building_id:
-        b = db.query(Building).filter(Building.id == p.building_id).first()
-        if b: building_number = b.number
-    if p.apartment_id:
-        a = db.query(Apartment).filter(Apartment.id == p.apartment_id).first()
-        if a: apartment_number = a.number
-
-    return PlaceResponse(
-        id=p.id, name=p.name, type=p.type,
-        lat=p.lat, lng=p.lng, region=p.region,
-        period=p.period or "", visibility=p.visibility or "private",
-        locality_id=p.locality_id, street_id=p.street_id,
-        building_id=p.building_id, apartment_id=p.apartment_id,
-        locality_name=locality_name, street_name=street_name,
-        building_number=building_number, apartment_number=apartment_number,
-        photos=photos_count, videos=videos_count,
-        neighbors=neighbors_count, memories=memories_count,
-    )
-
-
-@router.get("/places", response_model=list[PlaceResponse])
-def list_public_places(db: Session = Depends(get_db)):
-    places = db.query(Place).filter(Place.visibility == "public").order_by(Place.id).all()
-    return [_enrich_place(p, db) for p in places]
+@router.get("/places", response_model=PaginatedResponse[PlaceResponse])
+def list_public_places(offset: int = 0, limit: int = 50, db: Session = Depends(get_db), user: User = Depends(get_optional_user)):
+    if user:
+        query = db.query(Place).filter(
+            (Place.visibility == "public") |
+            ((Place.visibility == "family") & Place.user_id.in_(
+                db.query(FamilyMember.relative_id).filter(FamilyMember.user_id == user.id)
+            ))
+        )
+    else:
+        query = db.query(Place).filter(Place.visibility == "public")
+    query = query.order_by(Place.id)
+    items, total = paginate(query, offset, limit)
+    return PaginatedResponse(items=enrich_places(items, db, public_only=user is None), total=total, offset=offset, limit=limit)
 
 
 @router.get("/places/{place_id}", response_model=PlaceResponse)
-def get_public_place(place_id: int, db: Session = Depends(get_db), user=Depends(get_optional_user)):
+def get_public_place(place_id: int, db: Session = Depends(get_db), user: User = Depends(get_optional_user)):
     place = db.query(Place).filter(Place.id == place_id).first()
-    if not place:
+    if not place or not can_access_place(user, place, db):
         raise HTTPException(status_code=404, detail="Place not found")
-    if place.visibility != "public":
-        if not user or (place.user_id != user.id):
-            raise HTTPException(status_code=404, detail="Place not found")
-    return _enrich_place(place, db)
+    return enrich_place(place, db, public_only=not user or place.visibility != "public")
 
 
-@router.get("/memories", response_model=list[MemoryResponse])
-def list_public_memories(place_id: int = None, db: Session = Depends(get_db)):
-    query = db.query(Memory).filter(Memory.visibility == "public", Memory.status == "approved")
+@router.get("/memories", response_model=PaginatedResponse[MemoryResponse])
+def list_public_memories(place_id: int = None, offset: int = 0, limit: int = 50, db: Session = Depends(get_db), user: User = Depends(get_optional_user)):
+    query = db.query(Memory).filter(Memory.status == "approved")
     if place_id:
         query = query.filter(Memory.place_id == place_id)
-    memories = query.order_by(Memory.created_at.desc()).all()
+    query = query.order_by(Memory.created_at.desc())
+    items, total = paginate(query, offset, limit)
+    memories = [m for m in items if can_access_memory(user, m, db)]
+
+    if not memories:
+        return PaginatedResponse(items=[], total=0, offset=offset, limit=limit)
+
+    mids = [m.id for m in memories]
+
+    all_photos = db.query(Photo).filter(Photo.memory_id.in_(mids)).all()
+    all_videos = db.query(Video).filter(Video.memory_id.in_(mids)).all()
+
+    photos_by_memory = {}
+    videos_by_memory = {}
+    for p in all_photos:
+        photos_by_memory.setdefault(p.memory_id, []).append(p)
+    for v in all_videos:
+        videos_by_memory.setdefault(v.memory_id, []).append(v)
+
     result = []
     for m in memories:
         place = m.place
-        photos = db.query(Photo).filter(Photo.memory_id == m.id).all()
-        videos = db.query(Video).filter(Video.memory_id == m.id).all()
-        media = [f"/uploads/{p.file_path.split('/')[-1]}" for p in photos if p.file_path] + [f"/uploads/{v.file_path.split('/')[-1]}" for v in videos if v.file_path]
+        mp = photos_by_memory.get(m.id, [])
+        mv = videos_by_memory.get(m.id, [])
+        media = [media_url(p.file_path) for p in mp if media_url(p.file_path)] + [media_url(v.file_path) for v in mv if media_url(v.file_path)]
         result.append(MemoryResponse(
             id=m.id, title=m.title, text=m.text,
             date=m.date, category=m.category, visibility=m.visibility or "private",
@@ -83,7 +72,7 @@ def list_public_memories(place_id: int = None, db: Session = Depends(get_db)):
             placeName=place.name if place else "",
             placeRegion=place.region if place else "",
             media=media,
-            photos=[{"url": f"/uploads/{p.file_path.split('/')[-1]}"} for p in photos if p.file_path],
-            videos=[{"url": f"/uploads/{v.file_path.split('/')[-1]}"} for v in videos if v.file_path],
+            photos=[{"url": media_url(p.file_path)} for p in mp if media_url(p.file_path)],
+            videos=[{"url": media_url(v.file_path)} for v in mv if media_url(v.file_path)],
         ))
-    return result
+    return PaginatedResponse(items=result, total=total, offset=offset, limit=limit)

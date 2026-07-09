@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Воспоминание — Малая Родина</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/map/" class="topbar-logo">🌿 Малая Родина</a>
+    </div>
+    <div class="topbar-right">
+      <button class="edit-btn" id="edit-btn">✏️ Редактировать</button>
+      <button class="delete-btn" id="delete-btn">🗑 Удалить</button>
+      <div class="user-avatar" id="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <a href="#" class="back-link" id="back-link">← Назад</a>
+
+    <div class="memory-card" id="memory-card"></div>
+
+    <div class="memory-neighbors" id="memory-neighbors" style="display:none">
+      <h3>👥 Соседи в этом воспоминании</h3>
+      <div id="neighbors-list" class="neighbors-list"></div>
+    </div>
+
+    <div class="memory-nav" id="memory-nav"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

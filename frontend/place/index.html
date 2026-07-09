@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Место — Малая Родина</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/map/" class="topbar-logo">🌿 Малая Родина</a>
+      <nav class="topbar-nav">
+        <a href="/map/">Карта</a>
+        <a href="/my-places/">Мои места</a>
+        <a href="/profile/">Хроника</a>
+        <a href="/moderation/">Модерация</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-avatar" id="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <a href="/map/" class="back-link">← На карту</a>
+
+    <div class="place-hero" id="place-hero"></div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div id="section-memories" class="content-section active"></div>
+    <div id="section-photos" class="content-section"></div>
+    <div id="section-videos" class="content-section"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

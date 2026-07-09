@@ -1,17 +1,17 @@
 import os
-import shutil
-import re
-import nh3
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import Optional
-from PIL import Image
 
 from database import get_db
 from models import Memory, Place, Photo, Video, User
 from schemas import MemoryCreate, MemoryResponse
 from auth_utils import get_current_user
+from routers.common import paginate, PaginatedResponse
+from limiter import limiter
+from services.text_service import sanitize_memory_text, extract_plain_title, detect_visibility_status
+from services.media_service import save_photo, save_video, delete_media_files
+from services.memory_service import build_memory_response, build_memory_response_from_batch, batch_load_media
+from services.ownership import get_owned_or_404
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -19,80 +19,82 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 router = APIRouter(prefix="/api/memories", tags=["memories"])
 
 
-def _media_url(file_path: str | None) -> str | None:
-    if not file_path:
-        return None
-    return f"/uploads/{os.path.basename(file_path)}"
-
-
-@router.get("", response_model=list[MemoryResponse])
-def list_memories(place_id: int = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+@router.get("", response_model=PaginatedResponse[MemoryResponse])
+def list_memories(place_id: int = None, offset: int = 0, limit: int = 50, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     query = db.query(Memory).filter(Memory.user_id == user.id)
     if place_id:
         query = query.filter(Memory.place_id == place_id)
-    memories = query.order_by(Memory.created_at.desc()).all()
+    query = query.order_by(Memory.created_at.desc())
+    items, total = paginate(query, offset, limit)
+
+    if not items:
+        return PaginatedResponse(items=[], total=0, offset=offset, limit=limit)
+
+    mids = [m.id for m in items]
+    photos_by_memory, videos_by_memory = batch_load_media(mids, db)
+
     result = []
-    for m in memories:
-        place = m.place
-        photos = db.query(Photo).filter(Photo.memory_id == m.id).all()
-        videos = db.query(Video).filter(Video.memory_id == m.id).all()
-        media = [_media_url(p.file_path) for p in photos if _media_url(p.file_path)] + [_media_url(v.file_path) for v in videos if _media_url(v.file_path)]
-        result.append(MemoryResponse(
-            id=m.id, title=m.title, text=m.text,
-            date=m.date, category=m.category, visibility=m.visibility or "private",
-            status=m.status or "approved", placeId=m.place_id,
-            placeName=place.name if place else "",
-            placeRegion=place.region if place else "",
-            media=media,
-            photos=[{"url": _media_url(p.file_path)} for p in photos if _media_url(p.file_path)],
-            videos=[{"url": _media_url(v.file_path)} for v in videos if _media_url(v.file_path)],
+    for m in items:
+        result.append(build_memory_response_from_batch(
+            m, photos_by_memory.get(m.id, []), videos_by_memory.get(m.id, [])
         ))
-    return result
+    return PaginatedResponse(items=result, total=total, offset=offset, limit=limit)
 
 
 @router.post("", response_model=MemoryResponse)
-def create_memory(body: MemoryCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+@limiter.limit("30/hour")
+def create_memory(request: Request, body: MemoryCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == body.placeId, Place.user_id == user.id).first()
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
-    clean_text = nh3.clean(body.text, tags={'p','b','i','u','s','em','strong','ul','ol','li','blockquote','pre','code','h1','h2','h3','br'})
-    plain_title = body.title or re.sub(r'<[^>]*>', '', clean_text)[:100]
-    status = "approved" if body.visibility == "private" else "pending"
+    clean_text = sanitize_memory_text(body.text)
+    plain_title = extract_plain_title(clean_text, body.title)
     memory = Memory(
         title=plain_title,
         text=clean_text,
         date=body.date,
         category=body.category,
         visibility=body.visibility,
-        status=status,
+        status=detect_visibility_status(body.visibility),
         place_id=body.placeId,
         user_id=user.id,
     )
     db.add(memory)
     db.commit()
     db.refresh(memory)
-    return MemoryResponse(
-        id=memory.id,
-        title=memory.title,
-        text=memory.text,
-        date=memory.date,
-        category=memory.category,
-        visibility=memory.visibility or "private",
-        status=memory.status or "approved",
-        placeId=memory.place_id,
-        placeName=place.name,
-        placeRegion=place.region or "",
-        media=[],
-        photos=[],
-        videos=[],
-    )
+    return build_memory_response(memory, db)
+
+
+@router.put("/{memory_id}", response_model=MemoryResponse)
+@limiter.limit("30/hour")
+def update_memory(
+    request: Request,
+    memory_id: int,
+    body: MemoryCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    memory = get_owned_or_404(db, Memory, memory_id, user)
+    clean_text = sanitize_memory_text(body.text)
+    plain_title = extract_plain_title(clean_text, body.title)
+    memory.title = plain_title
+    memory.text = clean_text
+    memory.date = body.date
+    memory.category = body.category
+    old_visibility = memory.visibility
+    memory.visibility = body.visibility
+    if body.visibility != "private" and body.visibility != old_visibility:
+        memory.status = "pending"
+    elif body.visibility == "private" and memory.status != "approved":
+        memory.status = "approved"
+    db.commit()
+    db.refresh(memory)
+    return build_memory_response(memory, db)
 
 
 @router.get("/{memory_id}/neighbors")
 def get_memory_neighbors(memory_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
-    if not memory:
-        raise HTTPException(status_code=404, detail="Memory not found")
+    memory = get_owned_or_404(db, Memory, memory_id, user)
     return [
         {"id": n.id, "name": n.name, "role": n.role, "period": n.period}
         for n in memory.linked_neighbors
@@ -101,103 +103,64 @@ def get_memory_neighbors(memory_id: int, db: Session = Depends(get_db), user: Us
 
 @router.get("/{memory_id}", response_model=MemoryResponse)
 def get_memory(memory_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
-    if not memory:
+    memory = db.query(Memory).filter(Memory.id == memory_id).first()
+    from routers.common import can_access_memory
+    if not memory or not can_access_memory(user, memory, db):
         raise HTTPException(status_code=404, detail="Memory not found")
-    place = memory.place
-    photos = db.query(Photo).filter(Photo.memory_id == memory.id).all()
-    videos = db.query(Video).filter(Video.memory_id == memory.id).all()
-    media = ["📸"] * len(photos) + ["🎬"] * len(videos)
-    return MemoryResponse(
-        id=memory.id,
-        title=memory.title,
-        text=memory.text,
-        date=memory.date,
-        category=memory.category,
-        visibility=memory.visibility or "private",
-        placeId=memory.place_id,
-        placeName=place.name if place else "",
-        placeRegion=place.region or "",
-        media=media,
-        photos=[{"url": _media_url(p.file_path)} for p in photos if _media_url(p.file_path)],
-        videos=[{"url": _media_url(v.file_path)} for v in videos if _media_url(v.file_path)],
-    )
+    return build_memory_response(memory, db)
 
 
 @router.delete("/{memory_id}")
 def delete_memory(memory_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
-    if not memory:
-        raise HTTPException(status_code=404, detail="Memory not found")
+    memory = get_owned_or_404(db, Memory, memory_id, user)
+    file_paths = [p.file_path for p in memory.photos if p.file_path]
+    file_paths += [v.file_path for v in memory.videos if v.file_path]
     db.delete(memory)
     db.commit()
+    delete_media_files(file_paths)
     return {"ok": True}
 
 
 @router.post("/{memory_id}/photos")
+@limiter.limit("20/hour")
 async def upload_photo(
+    request: Request,
     memory_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
-    if not memory:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    ext = os.path.splitext(file.filename or "photo.jpg")[1] or ".jpg"
-    filename = f"memory_{memory_id}_{os.urandom(4).hex()}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    try:
-        img = Image.open(filepath)
-        if img.mode == "RGBA":
-            img = img.convert("RGB")
-        max_dim = 1920
-        if img.width > max_dim or img.height > max_dim:
-            ratio = min(max_dim / img.width, max_dim / img.height)
-            img = img.resize((int(img.width * ratio), int(img.height * ratio)), Image.LANCZOS)
-        out_ext = ".jpg"
-        out_path = os.path.splitext(filepath)[0] + out_ext
-        img.save(out_path, "JPEG", quality=85, optimize=True)
-        if out_path != filepath:
-            os.remove(filepath)
-            filepath = out_path
-            filename = os.path.basename(filepath)
-    except Exception:
-        pass
-    status = "approved" if memory.visibility == "private" else "pending"
-    photo = Photo(file_path=filepath, status=status, memory_id=memory.id, place_id=memory.place_id)
+    memory = get_owned_or_404(db, Memory, memory_id, user)
+    photo = await save_photo(file, memory)
     db.add(photo)
-    db.commit()
-    return {"id": photo.id, "file_path": filepath}
+    try:
+        db.commit()
+    except Exception:
+        if os.path.exists(photo.file_path):
+            os.remove(photo.file_path)
+        raise
+    return {"id": photo.id, "file_path": photo.file_path}
 
 
 @router.post("/{memory_id}/videos")
+@limiter.limit("10/hour")
 async def upload_video(
+    request: Request,
     memory_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.user_id == user.id).first()
-    if not memory:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    max_size = 100 * 1024 * 1024
-    file.file.seek(0, 2)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > max_size:
-        raise HTTPException(status_code=413, detail="Video too large (max 100MB)")
-    ext = os.path.splitext(file.filename or "video.mp4")[1] or ".mp4"
-    filename = f"memory_{memory_id}_{os.urandom(4).hex()}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    video = Video(file_path=filepath, memory_id=memory.id, place_id=memory.place_id)
+    memory = get_owned_or_404(db, Memory, memory_id, user)
+    video = await save_video(file, memory)
     db.add(video)
-    db.commit()
-    return {"id": video.id, "file_path": filepath}
+    try:
+        db.commit()
+    except Exception:
+        if os.path.exists(video.file_path):
+            os.remove(video.file_path)
+        raise
+    return {"id": video.id, "file_path": video.file_path}
 
 
 @router.get("/adjacent/{memory_id}")

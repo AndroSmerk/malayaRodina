@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Малая Родина — Карта</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="/map/" class="topbar-logo">🌿 Малая Родина</a>
+      <nav class="topbar-nav">
+        <a href="#" class="active">Карта</a>
+        <a href="/my-places/">Мои места</a>
+        <a href="/profile/">Хроника</a>
+        <a href="/family/">Семья</a>
+        <a href="/moderation/">Модерация</a>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="user-avatar" id="user-avatar">ИП</div>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Поиск по названию...">
+          <div id="search-results"></div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-types">
+          <label><input type="checkbox" class="filter-type" value="village" checked> 🏘 деревня</label>
+          <label><input type="checkbox" class="filter-type" value="town" checked> 🏡 посёлок</label>
+          <label><input type="checkbox" class="filter-type" value="city" checked> 🏙 город</label>
+          <label><input type="checkbox" class="filter-type" value="district" checked> 🏢 район</label>
+          <label><input type="checkbox" class="filter-type" value="house" checked> 🏠 дом</label>
+        </div>
+        <div class="filter-period">
+          <input type="text" id="filter-period" placeholder="Период (например, 1985)">
+        </div>
+      </div>
+
+      <div class="places-scroll" id="places-list"></div>
+    </aside>
+
+    <div class="map-area">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal modal-hierarchy">
+      <div class="modal-header">
+        <h3>Новое место</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="hierarchy-step">
+          <label>Населённый пункт <span class="required">*</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="locality-input" placeholder="Начните вводить название..." autocomplete="off">
+            <div class="hierarchy-results" id="locality-results"></div>
+          </div>
+          <input type="hidden" id="locality-id">
+          <input type="hidden" id="locality-lat">
+          <input type="hidden" id="locality-lng">
+          <input type="hidden" id="locality-region">
+          <input type="hidden" id="locality-type">
+          <div id="locality-type-badge" class="locality-type-badge" style="display:none">
+            <span id="lt-icon"></span>
+            <span id="lt-label"></span>
+            <span class="lt-hint">(нажмите чтобы изменить)</span>
+          </div>
+        </div>
+
+        <div class="hierarchy-step" id="street-step" style="display:none">
+          <label>Улица <span class="optional">необязательно</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="street-input" placeholder="Название улицы" autocomplete="off">
+            <div class="hierarchy-results" id="street-results"></div>
+          </div>
+          <input type="hidden" id="street-id">
+        </div>
+
+        <div class="hierarchy-step" id="building-step" style="display:none">
+          <label>Дом <span class="optional">необязательно</span></label>
+          <div class="hierarchy-search">
+            <input type="text" id="building-input" placeholder="Номер дома" autocomplete="off">
+            <div class="hierarchy-results" id="building-results"></div>
+          </div>
+          <input type="hidden" id="building-id">
+        </div>
+
+        <div class="hierarchy-step" id="apartment-step" style="display:none">
+          <label>Квартира / Комната <span class="optional">необязательно</span></label>
+          <input type="text" id="apartment-input" placeholder="№ квартиры">
+          <input type="hidden" id="apartment-id">
+        </div>
+
+        <div class="hierarchy-step" style="margin-top:8px">
+          <label>Период проживания <span class="optional">необязательно</span></label>
+          <input type="text" id="place-period" placeholder="например, 1985–1998">
+        </div>
+
+        <div class="hierarchy-step">
+          <label>Видимость</label>
+          <select id="place-visibility">
+            <option value="private">🔒 Только я</option>
+            <option value="family">👨‍👩‍👧‍👧 Семейный круг</option>
+            <option value="public">🌍 Публичное</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="modal-cancel">Отмена</button>
+        <button class="btn-submit" id="modal-submit">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

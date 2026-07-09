@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Малая Родина — Вход</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-brand">
+      <div class="logo">🌿 Малая Родина</div>
+      <div class="subtitle">Сохрани свои личные воспоминания на карте</div>
+      <div class="features" id="features"></div>
+    </div>
+
+    <div class="auth-form-wrap">
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Войти</button>
+        <button class="tab" data-tab="register">Регистрация</button>
+      </div>
+
+      <div id="form-login">
+        <div class="form-title">С возвращением!</div>
+        <div class="form-desc">Войдите в свой дневник воспоминаний</div>
+        <div class="form-group">
+          <label>Электронная почта</label>
+          <input type="email" id="login-email" placeholder="example@mail.ru">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="login-password" placeholder="••••••••">
+        </div>
+        <div class="form-row">
+          <label><input type="checkbox" id="remember-me" checked> Запомнить меня</label>
+        </div>
+        <button class="btn-primary" id="login-btn">Войти</button>
+        <div class="form-footer">
+          Ещё нет дневника? <a href="#" id="switch-to-register">Создать</a>
+        </div>
+      </div>
+
+      <div id="form-register" class="hidden">
+        <div class="form-title">Начать вести дневник</div>
+        <div class="form-desc">Создайте личное пространство для воспоминаний</div>
+        <div class="form-group">
+          <label>Имя и фамилия</label>
+          <input type="text" id="register-name" placeholder="Ваше имя">
+        </div>
+        <div class="form-group">
+          <label>Электронная почта</label>
+          <input type="email" id="register-email" placeholder="example@mail.ru">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="register-password" placeholder="Не менее 8 символов">
+        </div>
+        <div class="form-group">
+          <label>Подтвердите пароль</label>
+          <input type="password" id="register-confirm" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" id="register-btn">Начать</button>
+        <div class="form-footer">
+          Уже ведёте дневник? <a href="#" id="switch-to-login">Войти</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

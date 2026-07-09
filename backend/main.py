@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 import os
 import sys
 
 from database import engine, Base
-from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation, settlements
+from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation, settlements, uploads
+from limiter import limiter
 
 Base.metadata.create_all(bind=engine)
+engine.dispose()
 
 from import_settlements import needs_import, run
 
@@ -22,9 +26,13 @@ if needs_import():
 
 app = FastAPI(title="Малая Родина API")
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+origins = os.environ.get("CORS_ORIGINS", "http://localhost:8000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,10 +51,9 @@ app.include_router(family.router)
 app.include_router(public.router)
 app.include_router(moderation.router)
 app.include_router(settlements.router)
+app.include_router(uploads.router)
 
-uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
-os.makedirs(uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
-
-pages_dir = os.path.join(os.path.dirname(__file__), "..", "pages")
-app.mount("/", StaticFiles(directory=pages_dir, html=True), name="frontend")
+FRONTEND_DIR = os.environ.get("FRONTEND_DIR", os.path.join(os.path.dirname(__file__), "..", "dist"))
+if not os.path.isdir(FRONTEND_DIR):
+    FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "dist")
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

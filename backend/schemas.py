@@ -187,10 +187,16 @@ class FamilyMemberResponse(BaseModel):
         from_attributes = True
 
 
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+
+
 class ProfileResponse(BaseModel):
     name: str
     email: str
     bio: str = ""
+    avatar: str = ""
     initials: str = ""
 
 

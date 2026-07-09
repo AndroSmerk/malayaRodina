@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Neighbor, Place, User, Memory
+from models import Neighbor, Place, User, Memory, neighbor_memory
 from schemas import NeighborCreate, NeighborResponse
 from auth_utils import get_current_user
+from limiter import limiter
 
 router = APIRouter(prefix="/api/neighbors", tags=["neighbors"])
 
@@ -15,18 +16,32 @@ def list_neighbors(place_id: int, db: Session = Depends(get_db), user: User = De
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
     neighbors = db.query(Neighbor).filter(Neighbor.place_id == place_id).all()
-    result = []
-    for n in neighbors:
-        memory_ids = [m.id for m in n.linked_memories]
-        result.append(NeighborResponse(
+    if not neighbors:
+        return []
+
+    nids = [n.id for n in neighbors]
+    links = (
+        db.query(neighbor_memory.c.neighbor_id, neighbor_memory.c.memory_id)
+        .filter(neighbor_memory.c.neighbor_id.in_(nids))
+        .all()
+    )
+    memories_by_neighbor = {}
+    for nid, mid in links:
+        memories_by_neighbor.setdefault(nid, []).append(mid)
+
+    return [
+        NeighborResponse(
             id=n.id, name=n.name, role=n.role,
-            period=n.period, type=n.type, memories=memory_ids,
-        ))
-    return result
+            period=n.period, type=n.type,
+            memories=memories_by_neighbor.get(n.id, []),
+        )
+        for n in neighbors
+    ]
 
 
 @router.post("", response_model=NeighborResponse)
-def create_neighbor(body: NeighborCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+@limiter.limit("20/hour")
+def create_neighbor(request: Request, body: NeighborCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == body.placeId, Place.user_id == user.id).first()
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")

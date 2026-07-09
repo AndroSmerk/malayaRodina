@@ -1,3 +1,4 @@
+dist/
 node_modules/
 .DS_Store
 Thumbs.db
@@ -7,5 +8,9 @@ __pycache__/
 *.pyo
 venv/
 *.db
+*.db-shm
+*.db-wal
 uploads/
-backend/data/
+backend/data/RU.txt
+.env
+.jwt_secret

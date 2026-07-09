@@ -5,6 +5,7 @@ from sqlalchemy import func
 from database import get_db
 from models import Memory, Photo, User
 from auth_utils import get_current_user
+from routers.common import media_url
 
 router = APIRouter(prefix="/api/moderation", tags=["moderation"])
 
@@ -39,7 +40,7 @@ def get_pending(db: Session = Depends(get_db), user: User = Depends(get_current_
         "photos": [
             {
                 "id": p.id,
-                "file_path": p.file_path,
+                "url": media_url(p.file_path) or "",
                 "memory_id": p.memory_id,
                 "user_id": db.query(Memory.user_id).filter(Memory.id == p.memory_id).scalar() if p.memory_id else None,
             }

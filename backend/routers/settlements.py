@@ -32,9 +32,8 @@ def has_cyrillic(text):
 
 
 @router.get("/search")
-def search_settlements(q: str = Query(min_length=1), db: Session = Depends(get_db)):
+def search_settlements(q: str = Query(min_length=1), offset: int = 0, limit: int = 15, db: Session = Depends(get_db)):
     q = q.strip()
-    # Normalize: replace hyphens with % wildcard to handle both hyphen/space variants
     q_latin = transliterate(q).replace('-', '%')
     q_cyr = q.replace('-', '%')
 
@@ -46,7 +45,8 @@ def search_settlements(q: str = Query(min_length=1), db: Session = Depends(get_d
         db.query(SettlementCatalog)
         .filter(or_(*conditions))
         .order_by(SettlementCatalog.population.desc())
-        .limit(15)
+        .offset(offset)
+        .limit(limit)
         .all()
     )
     return [
