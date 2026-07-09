@@ -101,6 +101,7 @@ function init() {
       state.quill.root.innerHTML = memory.text
       updateCharCount()
 
+      if (memory.title) document.getElementById('memory-title').value = memory.title
       if (memory.date) document.getElementById('memory-date').value = memory.date
       if (memory.category) document.getElementById('memory-category').value = memory.category
       if (memory.visibility) document.getElementById('memory-visibility').value = memory.visibility
@@ -160,7 +161,7 @@ function init() {
     const data = {
       placeId: state.placeId,
       text,
-      title: state.quill.getText().trim().split('\n')[0].slice(0, 100),
+      title: document.getElementById('memory-title').value.trim(),
       date: document.getElementById('memory-date').value,
       category: document.getElementById('memory-category').value,
       visibility: document.getElementById('memory-visibility').value,

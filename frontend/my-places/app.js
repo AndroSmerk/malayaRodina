@@ -10,7 +10,10 @@ async function init() {
   let places = []
   try {
     const res = await fetch('/api/places', { headers: jsonHeaders() })
-    if (res.ok) places = await res.json()
+    if (res.ok) {
+      const data = await res.json()
+      places = data.items || []
+    }
   } catch {}
 
   const grid = document.getElementById('places-grid')

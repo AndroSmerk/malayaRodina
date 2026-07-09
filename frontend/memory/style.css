@@ -67,6 +67,7 @@ body { font-family: 'Inter', sans-serif; background: #f5f7fa; color: #1a1a2e; }
   font-size: 15px; line-height: 1.8; color: #333;
 }
 .memory-text p { margin-bottom: 16px; }
+.memory-text { overflow-wrap: break-word; word-break: break-word; }
 .memory-text p:last-child { margin-bottom: 0; }
 
 .memory-nav {
