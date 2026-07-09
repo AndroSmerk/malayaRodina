@@ -33,7 +33,7 @@ function renderProfile(profile) {
       <h1>${escHtml(profile.name)}</h1>
       <div class="email">${escHtml(profile.email)}</div>
       <div class="bio">${escHtml(profile.bio)}</div>
-      <button class="edit-profile-btn">✏️ Редактировать профиль</button>
+      <button class="edit-profile-btn" id="edit-profile-btn">✏️ Редактировать профиль</button>
     <button class="logout-btn" id="logout-btn">🚪 Выйти</button>
     </div>`
 }
