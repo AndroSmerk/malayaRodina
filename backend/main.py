@@ -7,7 +7,7 @@ import os
 import sys
 
 from database import engine, Base
-from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, moderation, settlements, uploads
+from routers import auth, places, memories, neighbors, profile, localities, streets, buildings, apartments, family, public, settlements, uploads
 from limiter import limiter
 
 Base.metadata.create_all(bind=engine)
@@ -49,7 +49,6 @@ app.include_router(buildings.router)
 app.include_router(apartments.router)
 app.include_router(family.router)
 app.include_router(public.router)
-app.include_router(moderation.router)
 app.include_router(settlements.router)
 app.include_router(uploads.router)
 

@@ -140,7 +140,6 @@ class MemoryResponse(BaseModel):
     date: str
     category: str
     visibility: str = "private"
-    status: str = "approved"
     placeId: int
     placeName: str = ""
     placeRegion: str = ""

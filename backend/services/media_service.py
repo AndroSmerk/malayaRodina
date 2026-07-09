@@ -62,8 +62,7 @@ async def save_photo(file: UploadFile, memory: Memory) -> Photo:
             os.remove(filepath)
         raise HTTPException(status_code=400, detail="Invalid or corrupted image")
 
-    status = "approved" if memory.visibility == "private" else "pending"
-    return Photo(file_path=filepath, status=status, memory_id=memory.id, place_id=memory.place_id)
+    return Photo(file_path=filepath, status="approved", memory_id=memory.id, place_id=memory.place_id)
 
 
 async def save_video(file: UploadFile, memory: Memory) -> Video:

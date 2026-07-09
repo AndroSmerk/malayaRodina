@@ -8,7 +8,7 @@ from schemas import MemoryCreate, MemoryResponse
 from auth_utils import get_current_user
 from routers.common import paginate, PaginatedResponse
 from limiter import limiter
-from services.text_service import sanitize_memory_text, extract_plain_title, detect_visibility_status
+from services.text_service import sanitize_memory_text, extract_plain_title
 from services.media_service import save_photo, save_video, delete_media_files
 from services.memory_service import build_memory_response, build_memory_response_from_batch, batch_load_media
 from services.ownership import get_owned_or_404
@@ -55,7 +55,7 @@ def create_memory(request: Request, body: MemoryCreate, db: Session = Depends(ge
         date=body.date,
         category=body.category,
         visibility=body.visibility,
-        status=detect_visibility_status(body.visibility),
+        status="approved",
         place_id=body.placeId,
         user_id=user.id,
     )
@@ -81,12 +81,7 @@ def update_memory(
     memory.text = clean_text
     memory.date = body.date
     memory.category = body.category
-    old_visibility = memory.visibility
     memory.visibility = body.visibility
-    if body.visibility != "private" and body.visibility != old_visibility:
-        memory.status = "pending"
-    elif body.visibility == "private" and memory.status != "approved":
-        memory.status = "approved"
     db.commit()
     db.refresh(memory)
     return build_memory_response(memory, db)

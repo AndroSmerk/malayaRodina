@@ -64,7 +64,6 @@ pytest tests/ -v
 | `/my-places/` | Список всех мест |
 | `/neighbors/?placeId=` | Соседи места |
 | `/family/` | Управление семейным кругом |
-| `/moderation/` | Панель модератора |
 | `/profile/` | Профиль + статистика + выход |
 
 ## API endpoints
@@ -121,12 +120,6 @@ pytest tests/ -v
 | | |
 | GET | `/api/public/places` | Публичные места (без аутентификации) |
 | GET | `/api/public/memories` | Публичные воспоминания |
-| | |
-| GET | `/api/moderation/pending` | Ожидающие модерации (модератор) |
-| POST | `/api/moderation/memories/{id}/approve` | Одобрить воспоминание |
-| POST | `/api/moderation/memories/{id}/reject` | Отклонить воспоминание |
-| POST | `/api/moderation/photos/{id}/approve` | Одобрить фото |
-| POST | `/api/moderation/photos/{id}/reject` | Отклонить фото |
 
 ## Структура проекта
 
@@ -150,7 +143,6 @@ malayaRodina/
 │   │   ├── profile.py          # Профиль + аватар
 │   │   ├── family.py           # Семейный круг
 │   │   ├── public.py           # Публичные эндпоинты
-│   │   ├── moderation.py       # Модерация контента
 │   │   ├── localities.py       # Населенные пункты
 │   │   ├── streets.py          # Улицы
 │   │   ├── buildings.py        # Дома
@@ -183,7 +175,6 @@ malayaRodina/
 │   ├── my-places/              # Список мест
 │   ├── neighbors/              # Соседи
 │   ├── family/                 # Семейный круг
-│   ├── moderation/             # Модерация
 │   └── profile/                # Профиль
 ├── dist/                       # Сборка Vite (gitignored)
 └── README.md

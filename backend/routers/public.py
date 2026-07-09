@@ -36,7 +36,7 @@ def get_public_place(place_id: int, db: Session = Depends(get_db), user: User = 
 
 @router.get("/memories", response_model=PaginatedResponse[MemoryResponse])
 def list_public_memories(place_id: int = None, offset: int = 0, limit: int = 50, db: Session = Depends(get_db), user: User = Depends(get_optional_user)):
-    query = db.query(Memory).filter(Memory.status == "approved")
+    query = db.query(Memory)
     if place_id:
         query = query.filter(Memory.place_id == place_id)
     query = query.order_by(Memory.created_at.desc())
@@ -68,7 +68,6 @@ def list_public_memories(place_id: int = None, offset: int = 0, limit: int = 50,
             id=m.id, title=m.title, text=m.text,
             date=m.date, category=m.category, visibility=m.visibility or "private",
             placeId=m.place_id,
-            status=m.status or "approved",
             placeName=place.name if place else "",
             placeRegion=place.region if place else "",
             media=media,

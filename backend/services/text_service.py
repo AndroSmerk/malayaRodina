@@ -14,7 +14,3 @@ def extract_plain_title(html_text: str, provided_title: str = "") -> str:
         return provided_title
     plain = re.sub(r'<[^>]*>', '', html_text)
     return plain[:100]
-
-
-def detect_visibility_status(visibility: str) -> str:
-    return "approved" if visibility == "private" else "pending"

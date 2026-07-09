@@ -40,7 +40,7 @@ def register(request: Request, body: UserRegister, db: Session = Depends(get_db)
     _set_token_cookie(response, token)
     return TokenResponse(
         token=token,
-        user={"id": user.id, "name": user.name, "email": user.email, "is_moderator": bool(user.is_moderator)},
+        user={"id": user.id, "name": user.name, "email": user.email},
     )
 
 
@@ -54,7 +54,7 @@ def login(request: Request, body: UserLogin, db: Session = Depends(get_db), resp
     _set_token_cookie(response, token)
     return TokenResponse(
         token=token,
-        user={"id": user.id, "name": user.name, "email": user.email, "is_moderator": bool(user.is_moderator)},
+        user={"id": user.id, "name": user.name, "email": user.email},
     )
 
 
@@ -64,7 +64,6 @@ def me(request: Request, user: User = Depends(get_current_user)):
         "id": user.id,
         "name": user.name,
         "email": user.email,
-        "is_moderator": bool(user.is_moderator),
     }
 
 

@@ -11,7 +11,6 @@ const entries = [
   'my-places/index',
   'neighbors/index',
   'family/index',
-  'moderation/index',
   'profile/index',
 ]
 

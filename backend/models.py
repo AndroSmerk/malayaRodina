@@ -38,7 +38,6 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     avatar = Column(String(500), default="")
     bio = Column(Text, default="")
-    is_moderator = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     places = relationship("Place", back_populates="user")

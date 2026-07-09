@@ -57,7 +57,6 @@ def test_get_memory(client, auth_headers, place_id):
     res = client.get(f"/api/memories/{memory_id}", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["id"] == memory_id
-    assert res.json()["status"] == "approved"
 
 
 def test_get_memory_other_user(client, auth_headers, second_user_headers, create_place, place_id):
@@ -79,7 +78,6 @@ def test_update_memory(client, auth_headers, place_id):
     }, headers=auth_headers)
     assert res.status_code == 200
     assert "updated" in res.json()["text"]
-    assert res.json()["status"] == "pending"
 
 
 def test_delete_memory(client, auth_headers, place_id):
