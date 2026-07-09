@@ -23,7 +23,8 @@ const API = {
   async getMemories(placeId) {
     const res = await fetch(`/api/memories?place_id=${placeId}`, { headers: jsonHeaders() });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return data.items || data;
   },
   async getPhotos(placeId) {
     const res = await fetch(`/api/places/${placeId}/photos`, { headers: jsonHeaders() });
